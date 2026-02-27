@@ -1,0 +1,1164 @@
+{
+  "version": 1,
+  "category": "shoulders_arms",
+  "exercises": [
+    {
+      "name": "Seat Shlder Press",
+      "repRange": "6-10 / 12-15 Reps",
+      "sessions": [
+        {
+          "date": "2025-10-16",
+          "note": "",
+          "sets": [
+            {
+              "weight": 45.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 50.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-10-24",
+          "note": "",
+          "sets": [
+            {
+              "weight": 40.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-10-30",
+          "note": "",
+          "sets": [
+            {
+              "weight": 45.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-11-07",
+          "note": "",
+          "sets": [
+            {
+              "weight": 45.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-12-26",
+          "note": "",
+          "sets": [
+            {
+              "weight": 35.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 35.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 35.0,
+              "reps": 13,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-02",
+          "note": "",
+          "sets": [
+            {
+              "weight": 35.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 35.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 35.0,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-08",
+          "note": "",
+          "sets": [
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-23",
+          "note": "apt",
+          "sets": [
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-29",
+          "note": "",
+          "sets": [
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-03",
+          "note": "apt",
+          "sets": [
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 1
+            },
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 1
+            },
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-02-12",
+          "note": "",
+          "sets": [
+            {
+              "weight": 40.0,
+              "reps": 14,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 1
+            },
+            {
+              "weight": 40.0,
+              "reps": 13,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-02-20",
+          "note": "",
+          "sets": [
+            {
+              "weight": 40.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 40.0,
+              "reps": 14,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-02-26",
+          "note": "",
+          "sets": [
+            {
+              "weight": 45.0,
+              "reps": 11,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 0,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 0,
+              "effort": 0
+            },
+            {
+              "weight": 45.0,
+              "reps": 0,
+              "effort": 0
+            }
+          ]
+        }
+      ],
+      "active": true
+    },
+    {
+      "name": "Lateral Raises",
+      "repRange": "8-12 Reps",
+      "sessions": [
+        {
+          "date": "2025-10-16",
+          "note": "",
+          "sets": [
+            {
+              "weight": 22.5,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-10-24",
+          "note": "",
+          "sets": [
+            {
+              "weight": 22.5,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-10-30",
+          "note": "",
+          "sets": [
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-11-07",
+          "note": "",
+          "sets": [
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-12-26",
+          "note": "",
+          "sets": [
+            {
+              "weight": 22.5,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 8,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-01-02",
+          "note": "",
+          "sets": [
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 1
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 2
+            },
+            {
+              "weight": 22.5,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-08",
+          "note": "",
+          "sets": [
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 1
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 1
+            },
+            {
+              "weight": 22.5,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-23",
+          "note": "apt",
+          "sets": [
+            {
+              "weight": 20.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 20.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 20.0,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-29",
+          "note": "",
+          "sets": [
+            {
+              "weight": 17.5,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 17.5,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 17.5,
+              "reps": 15,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-02-03",
+          "note": "apt",
+          "sets": [
+            {
+              "weight": 15.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 15.0,
+              "reps": 16,
+              "effort": 0
+            },
+            {
+              "weight": 15.0,
+              "reps": 16,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-12",
+          "note": "",
+          "sets": [
+            {
+              "weight": 20.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 20.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 20.0,
+              "reps": 15,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-02-20",
+          "note": "",
+          "sets": [
+            {
+              "weight": 20.0,
+              "reps": 15,
+              "effort": 1
+            },
+            {
+              "weight": 20.0,
+              "reps": 15,
+              "effort": 1
+            },
+            {
+              "weight": 20.0,
+              "reps": 15,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-02-26",
+          "note": "",
+          "sets": [
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 22.5,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        }
+      ],
+      "active": true
+    },
+    {
+      "name": "Reverse cable fly",
+      "repRange": "",
+      "sessions": [
+        {
+          "date": "2026-02-20",
+          "note": "",
+          "sets": [
+            {
+              "weight": 23.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 23.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 23.0,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-26",
+          "note": "",
+          "sets": [
+            {
+              "weight": 23.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 23.0,
+              "reps": 11,
+              "effort": 0
+            },
+            {
+              "weight": 23.0,
+              "reps": 11,
+              "effort": 0
+            }
+          ]
+        }
+      ],
+      "active": true
+    },
+    {
+      "name": "Cable Bicep Curl",
+      "repRange": "12-15 Reps",
+      "sessions": [
+        {
+          "date": "2025-10-16",
+          "note": "",
+          "sets": [
+            {
+              "weight": 62.5,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-10-24",
+          "note": "",
+          "sets": [
+            {
+              "weight": 65.0,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 9,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-10-30",
+          "note": "",
+          "sets": [
+            {
+              "weight": 65.0,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-11-07",
+          "note": "",
+          "sets": [
+            {
+              "weight": 65.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 10,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-12-26",
+          "note": "",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 10,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-01-02",
+          "note": "",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-08",
+          "note": "",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 13,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-01-23",
+          "note": "apt",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 13,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-03",
+          "note": "apt",
+          "sets": [
+            {
+              "weight": 84.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 84.0,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 84.0,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-12",
+          "note": "",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 14,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 12,
+              "effort": 1
+            },
+            {
+              "weight": 60.0,
+              "reps": 12,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2026-02-20",
+          "note": "",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-26",
+          "note": "",
+          "sets": [
+            {
+              "weight": 65.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 65.0,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        }
+      ],
+      "active": true
+    },
+    {
+      "name": "Tricep Overhead Ext.",
+      "repRange": "12-15 Reps",
+      "sessions": [
+        {
+          "date": "2025-10-15",
+          "note": "",
+          "sets": [
+            {
+              "weight": 57.5,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 57.5,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 57.5,
+              "reps": 9,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-10-24",
+          "note": "",
+          "sets": [
+            {
+              "weight": 57.5,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 57.5,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 57.5,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-10-30",
+          "note": "",
+          "sets": [
+            {
+              "weight": 57.5,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 57.5,
+              "reps": 12,
+              "effort": 1
+            },
+            {
+              "weight": 57.5,
+              "reps": 12,
+              "effort": 1
+            }
+          ]
+        },
+        {
+          "date": "2025-11-07",
+          "note": "",
+          "sets": [
+            {
+              "weight": 62.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 62.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 62.5,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2025-12-26",
+          "note": "",
+          "sets": [
+            {
+              "weight": 42.5,
+              "reps": 12,
+              "effort": 0
+            },
+            {
+              "weight": 47.5,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 47.5,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-02",
+          "note": "",
+          "sets": [
+            {
+              "weight": 47.5,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 47.5,
+              "reps": 15,
+              "effort": 0
+            },
+            {
+              "weight": 47.5,
+              "reps": 15,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-08",
+          "note": "",
+          "sets": [
+            {
+              "weight": 50.0,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 50.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 50.0,
+              "reps": 11,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-23",
+          "note": "apt",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 14,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 14,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 14,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-01-29",
+          "note": "",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 55.0,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-03",
+          "note": "apt",
+          "sets": [
+            {
+              "weight": 72.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 72.0,
+              "reps": 13,
+              "effort": 0
+            },
+            {
+              "weight": 72.0,
+              "reps": 12,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-12",
+          "note": "",
+          "sets": [
+            {
+              "weight": 60.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 9,
+              "effort": 0
+            },
+            {
+              "weight": 60.0,
+              "reps": 9,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-20",
+          "note": "",
+          "sets": [
+            {
+              "weight": 50.0,
+              "reps": 10,
+              "effort": 0
+            },
+            {
+              "weight": 50.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 50.0,
+              "reps": 7,
+              "effort": 0
+            }
+          ]
+        },
+        {
+          "date": "2026-02-26",
+          "note": "Fix form (y shape)",
+          "sets": [
+            {
+              "weight": 35.0,
+              "reps": 8,
+              "effort": 0
+            },
+            {
+              "weight": 35.0,
+              "reps": 8,
+              "effort": 0
+            }
+          ]
+        }
+      ],
+      "active": true
+    }
+  ]
+}
