@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <title>Gym</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -23,9 +23,9 @@
 }
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f2f2f7; --bg2: #fff; --bg3: #e5e5ea; --bg4: #d1d1d6;
+    --bg: #fff; --bg2: #f9f9f9; --bg3: #e5e5ea; --bg4: #d1d1d6;
     --text: #000; --text2: #3c3c43; --text3: #8e8e93;
-    --blue: #007aff; --red: #ff3b30; --green: #28a745; --yellow: #b8860b; --orange: #e67e00;
+    --blue: #007aff; --red: #ff3b30; --green: #30d158; --yellow: #ffd60a; --orange: #ff9f0a;
   }
   input,textarea { background:#fff; border-color:var(--bg4); color:var(--text); }
   select { background:#fff; border-color:var(--bg4); color:var(--text); }
@@ -74,7 +74,7 @@ const CATEGORIES = [
 ];
 const REP_RANGES = ['6-8 Reps','8-10 Reps','8-12 Reps','10-12 Reps','12-15 Reps','15-20 Reps','Til Failure'];
 const EFFORT_LABELS = ['Clean','Hard','Very Hard','Failure'];
-const EFFORT_COLORS = ['var(--green)','var(--yellow)','var(--orange)','var(--red)'];
+const EFFORT_COLORS = ['#30d158','#ffd60a','#ff9f0a','#ff453a'];
 
 // ==================== ICONS ====================
 const ICON_PATHS = {
@@ -362,8 +362,8 @@ function SetEditor({ setIndex, set, onUpdate, onDelete }) {
               fontSize:'11px', fontWeight:600, opacity: set.effort === e ? 1 : 0.4,
               transition:'opacity 0.15s',
               background: [
-                'rgba(48,209,88,0.15)','rgba(184,134,11,0.15)',
-                'rgba(230,126,0,0.15)','rgba(255,59,48,0.15)'
+                'rgba(48,209,88,0.25)','rgba(255,214,10,0.25)',
+                'rgba(255,159,10,0.25)','rgba(255,69,58,0.25)'
               ][e],
               color: EFFORT_COLORS[e]
             }}
@@ -1271,7 +1271,7 @@ function App() {
       </div>
 
       {/* Content */}
-      <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', paddingBottom:'20px' }}>
+      <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', paddingBottom:'20px', background:'var(--bg)' }}>
         {currentView.view === 'category' && (
           <CategoryView
             catId={currentTab}
