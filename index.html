@@ -15,20 +15,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <style>
 :root {
-  --bg: #000; --bg2: #1c1c1e; --bg3: #2c2c2e; --bg4: #3a3a3c;
+  --bg: #000; --bg2: #1c1c1e; --bg3: #2c2c2e; --bg4: #3a3a3c; --card: #2c2c2e;
   --text: #fff; --text2: #ababab; --text3: #636366;
   --blue: #0a84ff; --red: #ff453a; --green: #30d158; --yellow: #ffd60a; --orange: #ff9f0a;
+  --effort-green: #30d158; --effort-yellow: #ffd60a; --effort-orange: #ff9f0a; --effort-red: #ff453a;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #fff; --bg2: #f9f9f9; --bg3: #e5e5ea; --bg4: #d1d1d6;
+    --bg: #fff; --bg2: #f9f9f9; --bg3: #e8e8ed; --bg4: #d1d1d6; --card: #fff;
     --text: #000; --text2: #3c3c43; --text3: #8e8e93;
-    --blue: #007aff; --red: #ff3b30; --green: #30d158; --yellow: #ffd60a; --orange: #ff9f0a;
+    --blue: #007aff; --red: #ff3b30; --green: #30d158; --yellow: #e6a700; --orange: #e67e00;
+    --effort-green: #1a8f36; --effort-yellow: #9a7200; --effort-orange: #c26800; --effort-red: #d42a1f;
   }
-  input,textarea { background:#fff; border-color:var(--bg4); color:var(--text); }
-  select { background:#fff; border-color:var(--bg4); color:var(--text); }
+  input,textarea { background:#fff !important; border:1px solid #d1d1d6 !important; color:var(--text); }
+  select { background:#fff !important; border:1px solid #d1d1d6 !important; color:var(--text); }
 }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html { height:100%; background:var(--bg2); }
@@ -74,7 +76,7 @@ const CATEGORIES = [
 ];
 const REP_RANGES = ['6-8 Reps','8-10 Reps','8-12 Reps','10-12 Reps','12-15 Reps','15-20 Reps','Til Failure'];
 const EFFORT_LABELS = ['Clean','Hard','Very Hard','Failure'];
-const EFFORT_COLORS = ['#30d158','#ffd60a','#ff9f0a','#ff453a'];
+const EFFORT_COLORS = ['var(--effort-green)','var(--effort-yellow)','var(--effort-orange)','var(--effort-red)'];
 
 // ==================== ICONS ====================
 const ICON_PATHS = {
@@ -307,7 +309,7 @@ function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
 function SetEditor({ setIndex, set, onUpdate, onDelete }) {
   const [showMenu, setShowMenu] = useState(false);
   return (
-    <div style={{ background:'var(--bg3)', borderRadius:'10px', padding:'12px' }}>
+    <div style={{ background:'var(--card)', borderRadius:'10px', padding:'12px', border:'1px solid var(--bg3)' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px', position:'relative' }}>
         <span style={{ fontSize:'15px', fontWeight:600 }}>Set {setIndex + 1}</span>
         <button onClick={() => setShowMenu(!showMenu)} style={{ color:'var(--text3)', padding:'4px' }}>
