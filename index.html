@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <title>Gym</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -20,6 +21,15 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f2f2f7; --bg2: #fff; --bg3: #e5e5ea; --bg4: #d1d1d6;
+    --text: #000; --text2: #3c3c43; --text3: #8e8e93;
+    --blue: #007aff; --red: #ff3b30; --green: #28a745; --yellow: #b8860b; --orange: #e67e00;
+  }
+  input,textarea { background:#fff; border-color:var(--bg4); color:var(--text); }
+  select { background:#fff; border-color:var(--bg4); color:var(--text); }
+}
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html { height:100%; background:var(--bg2); }
 body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro','Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); overflow:hidden; height:100dvh; position:fixed; width:100%; }
@@ -27,6 +37,9 @@ button { font-family:inherit; border:none; cursor:pointer; background:none; colo
 input,textarea { font-family:inherit; font-size:16px; background:var(--bg3); color:var(--text); border:1px solid var(--bg4); border-radius:8px; padding:10px 12px; outline:none; width:100%; }
 textarea { resize:none; min-height:60px; }
 input:focus,textarea:focus { border-color:var(--blue); }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+input[type=number] { -moz-appearance:textfield; }
 select { font-family:inherit; font-size:16px; background:var(--bg3); color:var(--text); border:1px solid var(--bg4); border-radius:8px; padding:10px 12px; width:100%; outline:none; -webkit-appearance:none; }
 
 /* Animations */
@@ -56,12 +69,12 @@ const CATEGORIES = [
   { id:'push', name:'Push', iconName:'chevrons-up' },
   { id:'pull', name:'Pull', iconName:'chevrons-down' },
   { id:'legs', name:'Legs', iconName:'footprints' },
-  { id:'shoulders_arms', name:'Shoulders/Arms', iconName:'biceps-flexed' },
+  { id:'shoulders_arms', name:'Shldrs/Arms', iconName:'biceps-flexed' },
   { id:'abs', name:'Abs', iconName:'target' }
 ];
 const REP_RANGES = ['6-8 Reps','8-10 Reps','8-12 Reps','10-12 Reps','12-15 Reps','15-20 Reps','Til Failure'];
 const EFFORT_LABELS = ['Clean','Hard','Very Hard','Failure'];
-const EFFORT_COLORS = ['#30d158','#ffd60a','#ff9f0a','#ff453a'];
+const EFFORT_COLORS = ['var(--green)','var(--yellow)','var(--orange)','var(--red)'];
 
 // ==================== ICONS ====================
 const ICON_PATHS = {
@@ -84,6 +97,8 @@ const ICON_PATHS = {
   'x': '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
   'calendar': '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
   'play': '<polygon points="6 3 20 12 6 21 6 3"/>',
+  'ellipsis-vertical': '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
+  'edit': '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
 };
 
 function Icon({ name, size = 22, style = {} }) {
@@ -227,7 +242,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }) {
 }
 
 // --- Set Badge ---
-function SetBadge({ set }) {
+function SetBadge({ set, compact }) {
   const effortStyles = [
     { background:'rgba(48,209,88,0.2)', color:'var(--green)', border:'1px solid rgba(48,209,88,0.4)' },
     { background:'rgba(255,214,10,0.2)', color:'var(--yellow)', border:'1px solid rgba(255,214,10,0.4)' },
@@ -237,10 +252,12 @@ function SetBadge({ set }) {
   const s = effortStyles[set.effort] || effortStyles[0];
   return (
     <span style={{
-      fontSize:'11px', padding:'4px 8px', borderRadius:'6px', textAlign:'center',
-      fontWeight:600, ...s
+      fontSize: compact ? '10px' : '11px',
+      padding: compact ? '2px 6px' : '4px 8px',
+      borderRadius: compact ? '4px' : '6px',
+      textAlign:'center', fontWeight:600, ...s
     }}>
-      {Math.round(set.weight)}lbs &times;{set.reps}
+      {Math.round(set.weight)}&times;{set.reps}
     </span>
   );
 }
@@ -273,7 +290,7 @@ function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
         value={value}
         onChange={e => onChange(parseFloat(e.target.value) || 0)}
         style={{
-          width:'56px', height:'36px', borderRadius:0, textAlign:'center',
+          flex:1, minWidth:0, height:'36px', borderRadius:0, textAlign:'center',
           borderLeft:'none', borderRight:'none', fontWeight:600
         }}
       />
@@ -287,12 +304,33 @@ function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
 }
 
 // --- Set Editor ---
-function SetEditor({ setIndex, set, onUpdate, onDelete, onShowTimer }) {
+function SetEditor({ setIndex, set, onUpdate, onDelete }) {
+  const [showMenu, setShowMenu] = useState(false);
   return (
     <div style={{ background:'var(--bg3)', borderRadius:'10px', padding:'12px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px', position:'relative' }}>
         <span style={{ fontSize:'15px', fontWeight:600 }}>Set {setIndex + 1}</span>
-        <button onClick={onDelete} style={{ color:'var(--red)' }}><Icon name="trash-2" size={16} /></button>
+        <button onClick={() => setShowMenu(!showMenu)} style={{ color:'var(--text3)', padding:'4px' }}>
+          <Icon name="ellipsis-vertical" size={16} />
+        </button>
+        {showMenu && (
+          <>
+            <div onClick={() => setShowMenu(false)} style={{ position:'fixed', inset:0, zIndex:50 }} />
+            <div style={{
+              position:'absolute', top:'100%', right:0, zIndex:51,
+              background:'var(--bg2)', borderRadius:'10px', overflow:'hidden',
+              boxShadow:'0 4px 20px rgba(0,0,0,0.5)', border:'1px solid var(--bg4)',
+              minWidth:'160px'
+            }}>
+              <button onClick={() => { onDelete(); setShowMenu(false); }} style={{
+                width:'100%', padding:'12px 16px', textAlign:'left',
+                fontSize:'15px', color:'var(--red)', display:'flex', alignItems:'center', gap:'10px'
+              }}>
+                <Icon name="trash-2" size={16} /> Delete Set
+              </button>
+            </div>
+          </>
+        )}
       </div>
       <div style={{ display:'flex', gap:'10px', marginBottom:'10px' }}>
         <div style={{ flex:1 }}>
@@ -324,8 +362,8 @@ function SetEditor({ setIndex, set, onUpdate, onDelete, onShowTimer }) {
               fontSize:'11px', fontWeight:600, opacity: set.effort === e ? 1 : 0.4,
               transition:'opacity 0.15s',
               background: [
-                'rgba(48,209,88,0.25)','rgba(255,214,10,0.25)',
-                'rgba(255,159,10,0.25)','rgba(255,69,58,0.25)'
+                'rgba(48,209,88,0.15)','rgba(184,134,11,0.15)',
+                'rgba(230,126,0,0.15)','rgba(255,59,48,0.15)'
               ][e],
               color: EFFORT_COLORS[e]
             }}
@@ -334,19 +372,12 @@ function SetEditor({ setIndex, set, onUpdate, onDelete, onShowTimer }) {
           </button>
         ))}
       </div>
-      <button onClick={onShowTimer} style={{
-        display:'block', width:'100%', padding:'10px', marginTop:'8px',
-        background:'rgba(10,132,255,0.15)', color:'var(--blue)',
-        fontSize:'14px', fontWeight:600, borderRadius:'8px', textAlign:'center'
-      }}>
-        <Icon name="timer" size={16} /> Rest Timer
-      </button>
     </div>
   );
 }
 
 // --- Rest Timer ---
-function RestTimer({ onClose }) {
+function RestTimerBar() {
   const [running, setRunning] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [total, setTotal] = useState(0);
@@ -398,71 +429,51 @@ function RestTimer({ onClose }) {
     setTotal(0);
   };
 
-  const handleClose = () => {
-    stop();
-    onClose();
-  };
-
   const pct = total > 0 ? remaining / total : 0;
-  const circumference = 2 * Math.PI * 42;
-  const offset = circumference * (1 - pct);
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
   const urgent = remaining <= 10;
+  const barColor = urgent ? 'var(--red)' : 'var(--blue)';
 
   return (
     <div style={{
-      position:'fixed', bottom:'80px', left:'16px', right:'16px', zIndex:90,
-      background:'var(--bg2)', borderRadius:'20px', padding:'20px',
-      boxShadow:'0 8px 32px rgba(0,0,0,0.5)', border:'1px solid var(--bg3)',
-      backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)'
+      borderBottom:'1px solid var(--bg3)', background:'var(--bg2)',
+      flexShrink:0
     }}>
-      <button onClick={handleClose} style={{
-        position:'absolute', top:'12px', right:'16px', color:'var(--text3)'
-      }}>
-        <Icon name="x" size={20} />
-      </button>
-
       {!running ? (
-        <div style={{ display:'flex', gap:'8px' }}>
+        <div style={{ display:'flex', alignItems:'center', padding:'10px 16px', gap:'8px' }}>
+          <span style={{ fontSize:'13px', color:'var(--text3)', fontWeight:600, whiteSpace:'nowrap', marginRight:'4px' }}>Rest</span>
           {[60,90,120,180].map(d => (
             <button key={d} onClick={() => startRest(d)} style={{
-              flex:1, padding:'12px 8px', background:'var(--blue)', color:'#fff',
-              fontSize:'15px', fontWeight:600, borderRadius:'10px', textAlign:'center'
+              flex:1, padding:'10px 0', background:'var(--bg3)', color:'var(--text)',
+              fontSize:'14px', fontWeight:600, borderRadius:'10px', textAlign:'center'
             }}>
               {Math.floor(d/60)}:{String(d%60).padStart(2,'0')}
             </button>
           ))}
         </div>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'12px' }}>
-          <div style={{ position:'relative', width:'100px', height:'100px' }}>
-            <svg viewBox="0 0 100 100" style={{ width:'100px', height:'100px', transform:'rotate(-90deg)' }}>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--bg4)" strokeWidth="8" />
-              <circle cx="50" cy="50" r="42" fill="none"
-                stroke={urgent ? 'var(--red)' : 'var(--blue)'}
-                strokeWidth="8" strokeLinecap="round"
-                strokeDasharray={circumference} strokeDashoffset={offset}
-                style={{ transition:'stroke-dashoffset 0.5s linear, stroke 0.3s' }}
-              />
-            </svg>
+        <div style={{ padding:'10px 16px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
             <div style={{
-              position:'absolute', inset:0, display:'flex', flexDirection:'column',
-              alignItems:'center', justifyContent:'center'
+              fontSize:'28px', fontWeight:700, fontVariantNumeric:'tabular-nums',
+              color: urgent ? 'var(--red)' : 'var(--text)', minWidth:'70px'
             }}>
-              <span style={{ fontSize:'26px', fontWeight:700, fontVariantNumeric:'tabular-nums' }}>
-                {mins}:{String(secs).padStart(2, '0')}
-              </span>
-              <span style={{ fontSize:'11px', color:'var(--text3)' }}>remaining</span>
+              {mins}:{String(secs).padStart(2, '0')}
             </div>
-          </div>
-          <div style={{ display:'flex', gap:'8px' }}>
+            <div style={{ flex:1, height:'6px', background:'var(--bg4)', borderRadius:'3px', overflow:'hidden' }}>
+              <div style={{
+                height:'100%', borderRadius:'3px', background: barColor,
+                width: (pct * 100) + '%',
+                transition:'width 1s linear, background 0.3s'
+              }} />
+            </div>
             <button onClick={addTime} style={{
-              padding:'8px 18px', borderRadius:'8px', fontSize:'14px', fontWeight:600,
-              background:'rgba(48,209,88,0.2)', color:'var(--green)'
+              padding:'8px 12px', borderRadius:'8px', fontSize:'13px', fontWeight:600,
+              background:'rgba(48,209,88,0.2)', color:'var(--green)', whiteSpace:'nowrap'
             }}>+30s</button>
             <button onClick={stop} style={{
-              padding:'8px 18px', borderRadius:'8px', fontSize:'14px', fontWeight:600,
+              padding:'8px 12px', borderRadius:'8px', fontSize:'13px', fontWeight:600,
               background:'rgba(255,69,58,0.2)', color:'var(--red)'
             }}>Stop</button>
           </div>
@@ -473,25 +484,35 @@ function RestTimer({ onClose }) {
 }
 
 // --- Workout Modal ---
-function WorkoutModal({ catId, data, onSave, onClose }) {
+function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
   const cat = CATEGORIES.find(c => c.id === catId);
   const exercises = getActiveExercises(data, catId);
+  const isEdit = !!editSession;
 
-  const [date, setDate] = useState(todayStr());
-  const [note, setNote] = useState('');
+  const [date, setDate] = useState(editSession ? editSession.date : todayStr());
+  const [note, setNote] = useState(editSession ? editSession.note || '' : '');
   const [exStates, setExStates] = useState(() =>
     exercises.map(ex => {
-      const latest = getLatestSession(ex);
       let sets;
-      if (latest && latest.sets.length > 0) {
-        sets = latest.sets.map(s => ({ id: uuid(), weight: s.weight, reps: s.reps, effort: 0 }));
+      if (editSession) {
+        const editEx = editSession.exercises.find(e => e.id === ex.id);
+        if (editEx && editEx.sets.length > 0) {
+          sets = editEx.sets.map(s => ({ id: uuid(), weight: s.weight, reps: s.reps, effort: s.effort || 0 }));
+        } else {
+          sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
+        }
       } else {
-        sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
+        const latest = getLatestSession(ex);
+        if (latest && latest.sets.length > 0) {
+          sets = latest.sets.map(s => ({ id: uuid(), weight: s.weight, reps: s.reps, effort: 0 }));
+        } else {
+          sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
+        }
       }
       return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: false };
     })
   );
-  const [showTimer, setShowTimer] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const toggleCollapse = (ei) => {
     setExStates(prev => prev.map((ex, i) =>
@@ -527,24 +548,21 @@ function WorkoutModal({ catId, data, onSave, onClose }) {
   };
 
   return (
-    <div className="fade-in" style={{
-      position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:100,
-      display:'flex', alignItems:'flex-end', justifyContent:'center'
+    <div className="slide-in" style={{
+      position:'fixed', inset:0, background:'var(--bg)', zIndex:100,
+      display:'flex', flexDirection:'column'
     }}>
-      <div className="modal-enter" style={{
-        background:'var(--bg2)', width:'100%', maxHeight:'92dvh',
-        borderRadius:'16px 16px 0 0', display:'flex', flexDirection:'column',
-        overflow:'hidden', paddingBottom:'var(--safe-bottom)'
-      }}>
         <div style={{
           display:'flex', justifyContent:'space-between', alignItems:'center',
-          padding:'14px 16px', borderBottom:'1px solid var(--bg3)', flexShrink:0
+          padding:'calc(var(--safe-top) + 8px) 16px 8px', borderBottom:'1px solid var(--bg3)', flexShrink:0,
+          background:'var(--bg)'
         }}>
-          <button onClick={onClose} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Cancel</button>
-          <h2 style={{ fontSize:'17px', fontWeight:600 }}>{cat.name} Workout</h2>
+          <button onClick={() => setShowCancelConfirm(true)} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Cancel</button>
+          <h2 style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Edit' : cat.name} Workout</h2>
           <button onClick={handleSave} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Save</button>
         </div>
-        <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', padding:'16px' }}>
+        {!isEdit && <RestTimerBar />}
+        <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', padding:'16px', paddingBottom:'var(--safe-bottom)' }}>
           {/* Date */}
           <div style={{ display:'flex', alignItems:'center', gap:'10px', paddingBottom:'8px' }}>
             <label style={{ fontSize:'15px', fontWeight:500, whiteSpace:'nowrap' }}>Date</label>
@@ -589,7 +607,6 @@ function WorkoutModal({ catId, data, onSave, onClose }) {
                       set={s}
                       onUpdate={newSet => updateSet(ei, si, newSet)}
                       onDelete={() => deleteSet(ei, si)}
-                      onShowTimer={() => setShowTimer(true)}
                     />
                   ))}
                   <button onClick={() => addSet(ei)} style={{
@@ -603,10 +620,34 @@ function WorkoutModal({ catId, data, onSave, onClose }) {
               )}
             </div>
           ))}
-          <div style={{ height:'100px' }} />
+          <div style={{ height:'40px' }} />
         </div>
-      </div>
-      {showTimer && <RestTimer onClose={() => setShowTimer(false)} />}
+      {showCancelConfirm && (
+        <div className="fade-in" onClick={() => setShowCancelConfirm(false)} style={{
+          position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
+          display:'flex', alignItems:'flex-end', justifyContent:'center',
+          padding:'0 8px', paddingBottom:'calc(var(--safe-bottom) + 8px)'
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:'100%', maxWidth:'400px' }}>
+            <div className="modal-enter" style={{ borderRadius:'14px', overflow:'hidden', marginBottom:'8px' }}>
+              <div style={{ padding:'14px 16px', background:'var(--bg3)', textAlign:'center' }}>
+                <div style={{ fontSize:'13px', color:'var(--text2)', marginBottom:'2px' }}>Discard Workout?</div>
+                <div style={{ fontSize:'13px', color:'var(--text3)' }}>Your workout data will be lost.</div>
+              </div>
+              <button onClick={onClose} style={{
+                width:'100%', padding:'16px', background:'var(--bg3)',
+                fontSize:'20px', color:'var(--red)', fontWeight:600,
+                borderTop:'1px solid var(--bg4)', textAlign:'center'
+              }}>Discard</button>
+            </div>
+            <button onClick={() => setShowCancelConfirm(false)} style={{
+              width:'100%', padding:'16px', background:'var(--bg3)',
+              borderRadius:'14px', fontSize:'20px', color:'var(--blue)',
+              fontWeight:600, textAlign:'center'
+            }}>Keep Editing</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -727,20 +768,42 @@ function CategoryView({ catId, data, onNavigateDetail, onNewWorkout }) {
             <button onClick={() => onNavigateDetail(catId, ex.id)} style={{
               display:'block', width:'100%', textAlign:'left'
             }}>
-              <div style={{ fontSize:'17px', fontWeight:600 }}>{ex.name}</div>
-              <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'2px' }}>{ex.repRange}</div>
-              {latest ? (
-                <>
-                  <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'6px' }}>
-                    Last workout: {formatDate(latest.date)}
-                  </div>
-                  <div style={{ display:'flex', gap:'8px', marginTop:'6px', flexWrap:'wrap' }}>
-                    {latest.sets.map((s, i) => <SetBadge key={i} set={s} />)}
-                  </div>
-                </>
-              ) : (
-                <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'6px' }}>No sessions logged</div>
-              )}
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:'17px', fontWeight:600 }}>{ex.name}</div>
+                  <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'2px' }}>{ex.repRange}</div>
+                  {latest ? (
+                    <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'6px' }}>
+                      Last: {formatDate(latest.date)}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'6px' }}>No sessions logged</div>
+                  )}
+                  {latest && (
+                    <div style={{ display:'flex', gap:'3px', marginTop:'6px', flexWrap:'wrap' }}>
+                      {latest.sets.map((s, i) => <SetBadge key={i} set={s} compact />)}
+                    </div>
+                  )}
+                </div>
+                {latest && (() => {
+                  const allSets = (ex.sessions || []).flatMap(s => s.sets || []);
+                  const best = allSets.reduce((b, s) => s.weight > b.weight ? s : b, allSets[0]);
+                  const bestVol = Math.max(...(ex.sessions || []).map(s => (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0)));
+                  const fmt = (w) => Math.round(w).toLocaleString();
+                  return (
+                    <div style={{ display:'flex', flexDirection:'column', gap:'6px', alignItems:'flex-end', marginLeft:'12px', flexShrink:0 }}>
+                      <div style={{ textAlign:'right' }}>
+                        <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>Best</div>
+                        <div style={{ fontSize:'15px', fontWeight:700 }}>{Math.round(best.weight)}lbs</div>
+                      </div>
+                      <div style={{ textAlign:'right' }}>
+                        <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>Volume</div>
+                        <div style={{ fontSize:'15px', fontWeight:700 }}>{fmt(bestVol)}lbs</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </button>
           </div>
         );
@@ -750,8 +813,9 @@ function CategoryView({ catId, data, onNavigateDetail, onNewWorkout }) {
         padding:'12px 16px', background:'linear-gradient(transparent, var(--bg) 30%)', zIndex:10
       }}>
         <button onClick={() => onNewWorkout(catId)} style={{
-          display:'block', width:'100%', padding:'14px', background:'var(--blue)',
-          color:'#fff', fontSize:'17px', fontWeight:600, borderRadius:'12px', textAlign:'center'
+          display:'block', width:'100%', padding:'14px', background:'var(--bg2)',
+          color:'var(--blue)', fontSize:'17px', fontWeight:600, borderRadius:'12px', textAlign:'center',
+          border:'1px solid var(--bg3)'
         }}>
           <Icon name="play" size={18} /> New Workout
         </button>
@@ -761,11 +825,24 @@ function CategoryView({ catId, data, onNavigateDetail, onNewWorkout }) {
 }
 
 // --- Exercise Detail View ---
-function ExerciseDetailView({ catId, exId, data, onDeleteSession }) {
+function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession }) {
   const ex = getExercise(data, catId, exId);
   if (!ex) return null;
+  const [openMenu, setOpenMenu] = useState(null);
 
   const sessions = [...(ex.sessions || [])].sort((a, b) => b.date.localeCompare(a.date));
+
+  // Compute stats
+  const allSets = sessions.flatMap(s => s.sets || []);
+  const bestSingle = allSets.length > 0
+    ? allSets.reduce((best, s) => (s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) ? s : best, allSets[0])
+    : null;
+  const bestVolume = sessions.length > 0
+    ? Math.max(...sessions.map(s => (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0)))
+    : 0;
+  const allTimeTotal = allSets.reduce((sum, s) => sum + s.weight * s.reps, 0);
+
+  const formatWeight = (w) => Math.round(w).toLocaleString();
 
   return (
     <div className="slide-in">
@@ -777,6 +854,32 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession }) {
         <div style={{ fontSize:'22px', fontWeight:600, marginTop:'2px' }}>{ex.repRange}</div>
       </div>
 
+      {sessions.length > 0 && (
+        <div style={{ display:'flex', gap:'8px', margin:'0 16px 8px' }}>
+          <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
+            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>Best Single</div>
+            <div style={{ fontSize:'18px', fontWeight:700, marginTop:'4px' }}>
+              {bestSingle ? `${Math.round(bestSingle.weight)}lbs` : '—'}
+            </div>
+            {bestSingle && <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>&times;{bestSingle.reps} reps</div>}
+          </div>
+          <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
+            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>Best Volume</div>
+            <div style={{ fontSize:'18px', fontWeight:700, marginTop:'4px' }}>
+              {formatWeight(bestVolume)}lbs
+            </div>
+            <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>single session</div>
+          </div>
+          <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
+            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>All-Time</div>
+            <div style={{ fontSize:'18px', fontWeight:700, marginTop:'4px' }}>
+              {formatWeight(allTimeTotal)}lbs
+            </div>
+            <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>{sessions.length} sessions</div>
+          </div>
+        </div>
+      )}
+
       <div style={{ fontSize:'20px', fontWeight:700, padding:'8px 16px' }}>Workout History</div>
 
       {sessions.length === 0 ? (
@@ -785,14 +888,39 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession }) {
         <div key={idx} style={{
           background:'var(--bg2)', borderRadius:'12px', padding:'14px', margin:'8px 16px'
         }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start', position:'relative' }}>
             <div>
               <div style={{ fontSize:'16px', fontWeight:600 }}>{formatDate(s.date)}</div>
               {s.note && <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'2px' }}>{s.note}</div>}
             </div>
-            <button onClick={() => onDeleteSession(catId, exId, s.date)} style={{ color:'var(--red)' }}>
-              <Icon name="trash-2" size={16} />
+            <button onClick={() => setOpenMenu(openMenu === idx ? null : idx)} style={{ color:'var(--text3)', padding:'4px' }}>
+              <Icon name="ellipsis-vertical" size={16} />
             </button>
+            {openMenu === idx && (
+              <>
+                <div onClick={() => setOpenMenu(null)} style={{ position:'fixed', inset:0, zIndex:50 }} />
+                <div style={{
+                  position:'absolute', top:'100%', right:0, zIndex:51,
+                  background:'var(--bg3)', borderRadius:'10px', overflow:'hidden',
+                  boxShadow:'0 4px 20px rgba(0,0,0,0.5)', border:'1px solid var(--bg4)',
+                  minWidth:'160px'
+                }}>
+                  <button onClick={() => { if (onEditSession) onEditSession(catId, exId, s.date); setOpenMenu(null); }} style={{
+                    width:'100%', padding:'12px 16px', textAlign:'left',
+                    fontSize:'15px', color:'var(--text)', display:'flex', alignItems:'center', gap:'10px',
+                    borderBottom:'1px solid var(--bg4)'
+                  }}>
+                    <Icon name="edit" size={16} /> Edit Session
+                  </button>
+                  <button onClick={() => { onDeleteSession(catId, exId, s.date); setOpenMenu(null); }} style={{
+                    width:'100%', padding:'12px 16px', textAlign:'left',
+                    fontSize:'15px', color:'var(--red)', display:'flex', alignItems:'center', gap:'10px'
+                  }}>
+                    <Icon name="trash-2" size={16} /> Delete Session
+                  </button>
+                </div>
+              </>
+            )}
           </div>
           <div style={{ marginTop:'10px' }}>
             {s.sets.map((set, i) => (
@@ -1053,6 +1181,22 @@ function App() {
     });
   };
 
+  const handleEditSession = (catId, exId, dateStr) => {
+    const ex = getExercise(data, catId, exId);
+    if (!ex) return;
+    const session = (ex.sessions || []).find(s => s.date === dateStr);
+    if (!session) return;
+    setModalParams({
+      catId,
+      editSession: {
+        date: session.date,
+        note: session.note || '',
+        exercises: [{ id: ex.id, sets: session.sets }]
+      }
+    });
+    setModal('workout');
+  };
+
   const handleRestoreExercise = (exId) => {
     const newData = JSON.parse(JSON.stringify(data));
     const ex = getExercise(newData, currentTab, exId);
@@ -1142,6 +1286,7 @@ function App() {
             exId={currentView.params.exId}
             data={data}
             onDeleteSession={handleDeleteSession}
+            onEditSession={handleEditSession}
           />
         )}
         {currentView.view === 'settings' && (
@@ -1159,6 +1304,7 @@ function App() {
           data={data}
           onSave={handleSaveWorkout}
           onClose={() => setModal(null)}
+          editSession={modalParams.editSession}
         />
       )}
       {modal === 'addExercise' && (
