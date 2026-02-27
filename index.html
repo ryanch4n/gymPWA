@@ -15,34 +15,44 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <style>
 :root {
-  --bg: #000; --bg2: #1c1c1e; --bg3: #2c2c2e; --bg4: #3a3a3c; --card: #2c2c2e;
-  --text: #fff; --text2: #ababab; --text3: #636366;
-  --blue: #0a84ff; --red: #ff453a; --green: #30d158; --yellow: #ffd60a; --orange: #ff9f0a;
-  --effort-green: #30d158; --effort-yellow: #ffd60a; --effort-orange: #ff9f0a; --effort-red: #ff453a;
+  --bg: #09090b; --bg2: #18181b; --bg3: #27272a; --bg4: #3f3f46;
+  --card: #18181b; --card-border: #27272a;
+  --text: #fafafa; --text2: #a1a1aa; --text3: #71717a;
+  --blue: #3b82f6; --red: #ef4444; --green: #22c55e; --yellow: #eab308; --orange: #f97316;
+  --effort-green: #22c55e; --effort-yellow: #eab308; --effort-orange: #f97316; --effort-red: #ef4444;
+  --ring: rgba(59,130,246,0.5);
+  --input-bg: #18181b; --input-border: #3f3f46;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.3);
 }
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #fff; --bg2: #f9f9f9; --bg3: #e8e8ed; --bg4: #d1d1d6; --card: #fff;
-    --text: #000; --text2: #3c3c43; --text3: #8e8e93;
-    --blue: #007aff; --red: #ff3b30; --green: #30d158; --yellow: #e6a700; --orange: #e67e00;
-    --effort-green: #1a8f36; --effort-yellow: #9a7200; --effort-orange: #c26800; --effort-red: #d42a1f;
+    --bg: #fff; --bg2: #f9fafb; --bg3: #f3f4f6; --bg4: #e5e7eb;
+    --card: #fff; --card-border: #e5e7eb;
+    --text: #09090b; --text2: #52525b; --text3: #a1a1aa;
+    --blue: #2563eb; --red: #dc2626; --green: #16a34a; --yellow: #ca8a04; --orange: #ea580c;
+    --effort-green: #16a34a; --effort-yellow: #a16207; --effort-orange: #c2410c; --effort-red: #dc2626;
+    --ring: rgba(37,99,235,0.3);
+    --input-bg: #fff; --input-border: #d1d5db;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
   }
-  input,textarea { background:#fff !important; border:1px solid #d1d1d6 !important; color:var(--text); }
-  select { background:#fff !important; border:1px solid #d1d1d6 !important; color:var(--text); }
 }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html { height:100%; background:var(--bg2); }
 body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro','Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); overflow:hidden; height:100dvh; position:fixed; width:100%; }
 button { font-family:inherit; border:none; cursor:pointer; background:none; color:inherit; font-size:inherit; }
-input,textarea { font-family:inherit; font-size:16px; background:var(--bg3); color:var(--text); border:1px solid var(--bg4); border-radius:8px; padding:10px 12px; outline:none; width:100%; }
+input,textarea { font-family:inherit; font-size:16px; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:var(--radius); padding:10px 12px; outline:none; width:100%; transition:border-color 0.15s,box-shadow 0.15s; }
 textarea { resize:none; min-height:60px; }
-input:focus,textarea:focus { border-color:var(--blue); }
+input:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 2px var(--ring); }
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 input[type=number] { -moz-appearance:textfield; }
-select { font-family:inherit; font-size:16px; background:var(--bg3); color:var(--text); border:1px solid var(--bg4); border-radius:8px; padding:10px 12px; width:100%; outline:none; -webkit-appearance:none; }
+select { font-family:inherit; font-size:16px; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:var(--radius); padding:10px 12px; width:100%; outline:none; -webkit-appearance:none; transition:border-color 0.15s; }
+select:focus { border-color:var(--blue); box-shadow:0 0 0 2px var(--ring); }
 
 /* Animations */
 @keyframes slideInRight { from { transform:translateX(100%); } to { transform:translateX(0); } }
@@ -199,7 +209,7 @@ function TabBar({ currentTab, onSwitchTab }) {
 
   return (
     <div style={{
-      display:'flex', borderTop:'1px solid var(--bg3)', background:'var(--bg2)',
+      display:'flex', borderTop:'1px solid var(--card-border)', background:'var(--card)',
       paddingBottom:'var(--safe-bottom)', flexShrink:0
     }}>
       {tabs.map(t => (
@@ -210,7 +220,8 @@ function TabBar({ currentTab, onSwitchTab }) {
             flex:1, display:'flex', flexDirection:'column', alignItems:'center',
             padding:'8px 0 4px', fontSize:'10px', gap:'2px',
             color: currentTab === t.id ? 'var(--blue)' : 'var(--text3)',
-            background:'none'
+            background:'none', fontWeight: currentTab === t.id ? 600 : 400,
+            transition:'color 0.15s'
           }}
         >
           <span style={{ lineHeight:0 }}><Icon name={t.iconName} size={18} /></span>
@@ -225,18 +236,29 @@ function TabBar({ currentTab, onSwitchTab }) {
 function ConfirmDialog({ title, message, onConfirm, onCancel }) {
   return (
     <div className="fade-in" style={{
-      position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:200,
-      display:'flex', alignItems:'center', justifyContent:'center'
+      position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
+      display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px'
     }}>
       <div style={{
-        background:'var(--bg2)', borderRadius:'14px', width:'270px',
-        overflow:'hidden', textAlign:'center'
+        background:'var(--card)', borderRadius:'12px', width:'100%', maxWidth:'320px',
+        border:'1px solid var(--card-border)', boxShadow:'var(--shadow-lg)',
+        overflow:'hidden'
       }}>
-        <div style={{ fontSize:'17px', fontWeight:600, padding:'20px 16px 4px' }}>{title}</div>
-        <div style={{ fontSize:'13px', color:'var(--text2)', padding:'4px 16px 16px' }}>{message}</div>
-        <div style={{ borderTop:'1px solid var(--bg3)', display:'flex' }}>
-          <button onClick={onCancel} style={{ flex:1, padding:'12px', fontSize:'17px', borderRight:'1px solid var(--bg3)' }}>Cancel</button>
-          <button onClick={onConfirm} style={{ flex:1, padding:'12px', fontSize:'17px', color:'var(--red)', fontWeight:600 }}>Delete</button>
+        <div style={{ padding:'20px 20px 16px', textAlign:'center' }}>
+          <div style={{ fontSize:'17px', fontWeight:600 }}>{title}</div>
+          <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'6px', lineHeight:'1.4' }}>{message}</div>
+        </div>
+        <div style={{ display:'flex', gap:'8px', padding:'0 16px 16px' }}>
+          <button onClick={onCancel} style={{
+            flex:1, padding:'10px', fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)',
+            border:'1px solid var(--input-border)', background:'var(--card)', color:'var(--text)',
+            transition:'background 0.15s'
+          }}>Cancel</button>
+          <button onClick={onConfirm} style={{
+            flex:1, padding:'10px', fontSize:'14px', fontWeight:600, borderRadius:'var(--radius)',
+            background:'var(--red)', color:'#fff', border:'none',
+            transition:'opacity 0.15s'
+          }}>Delete</button>
         </div>
       </div>
     </div>
@@ -280,26 +302,28 @@ function EmptyState({ iconName, title, subtitle }) {
 // --- Stepper ---
 function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
   return (
-    <div style={{ display:'flex', alignItems:'center' }}>
+    <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
       <button onClick={() => onStep(-1)} style={{
-        width:'36px', height:'36px', background:'var(--bg4)', color:'var(--blue)',
-        fontSize:'20px', fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center',
-        borderRadius:'8px 0 0 8px'
-      }}>-</button>
+        width:'36px', height:'36px', background:'var(--card)', color:'var(--text)',
+        fontSize:'18px', fontWeight:500, display:'flex', alignItems:'center', justifyContent:'center',
+        borderRadius:'var(--radius)', border:'1px solid var(--input-border)',
+        transition:'background 0.15s'
+      }}>−</button>
       <input
         type="number"
         inputMode={inputMode}
         value={value}
         onChange={e => onChange(parseFloat(e.target.value) || 0)}
         style={{
-          flex:1, minWidth:0, height:'36px', borderRadius:0, textAlign:'center',
-          borderLeft:'none', borderRight:'none', fontWeight:600
+          flex:1, minWidth:0, height:'36px', borderRadius:'var(--radius)', textAlign:'center',
+          fontWeight:600, fontSize:'15px'
         }}
       />
       <button onClick={() => onStep(1)} style={{
-        width:'36px', height:'36px', background:'var(--bg4)', color:'var(--blue)',
-        fontSize:'20px', fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center',
-        borderRadius:'0 8px 8px 0'
+        width:'36px', height:'36px', background:'var(--card)', color:'var(--text)',
+        fontSize:'18px', fontWeight:500, display:'flex', alignItems:'center', justifyContent:'center',
+        borderRadius:'var(--radius)', border:'1px solid var(--input-border)',
+        transition:'background 0.15s'
       }}>+</button>
     </div>
   );
@@ -309,9 +333,9 @@ function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
 function SetEditor({ setIndex, set, onUpdate, onDelete }) {
   const [showMenu, setShowMenu] = useState(false);
   return (
-    <div style={{ background:'var(--card)', borderRadius:'10px', padding:'12px', border:'1px solid var(--bg3)' }}>
+    <div style={{ background:'var(--card)', borderRadius:'var(--radius)', padding:'12px', border:'1px solid var(--card-border)', boxShadow:'var(--shadow)' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px', position:'relative' }}>
-        <span style={{ fontSize:'15px', fontWeight:600 }}>Set {setIndex + 1}</span>
+        <span style={{ fontSize:'13px', fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Set {setIndex + 1}</span>
         <button onClick={() => setShowMenu(!showMenu)} style={{ color:'var(--text3)', padding:'4px' }}>
           <Icon name="ellipsis-vertical" size={16} />
         </button>
@@ -355,24 +379,30 @@ function SetEditor({ setIndex, set, onUpdate, onDelete }) {
         </div>
       </div>
       <div style={{ display:'flex', gap:'6px' }}>
-        {[0,1,2,3].map(e => (
-          <button
-            key={e}
-            onClick={() => onUpdate({ ...set, effort: e })}
-            style={{
-              flex:1, padding:'8px 4px', borderRadius:'8px', textAlign:'center',
-              fontSize:'11px', fontWeight:600, opacity: set.effort === e ? 1 : 0.4,
-              transition:'opacity 0.15s',
-              background: [
-                'rgba(48,209,88,0.25)','rgba(255,214,10,0.25)',
-                'rgba(255,159,10,0.25)','rgba(255,69,58,0.25)'
-              ][e],
-              color: EFFORT_COLORS[e]
-            }}
-          >
-            {EFFORT_LABELS[e]}
-          </button>
-        ))}
+        {[0,1,2,3].map(e => {
+          const selected = set.effort === e;
+          const colors = [
+            { bg:'var(--effort-green)', bgMuted:'transparent', border:'var(--effort-green)' },
+            { bg:'var(--effort-yellow)', bgMuted:'transparent', border:'var(--effort-yellow)' },
+            { bg:'var(--effort-orange)', bgMuted:'transparent', border:'var(--effort-orange)' },
+            { bg:'var(--effort-red)', bgMuted:'transparent', border:'var(--effort-red)' },
+          ][e];
+          return (
+            <button
+              key={e}
+              onClick={() => onUpdate({ ...set, effort: e })}
+              style={{
+                flex:1, padding:'7px 4px', borderRadius:'var(--radius)', textAlign:'center',
+                fontSize:'11px', fontWeight:600, transition:'all 0.15s',
+                background: selected ? colors.bg : 'transparent',
+                color: selected ? '#fff' : 'var(--text3)',
+                border: selected ? '1px solid ' + colors.bg : '1px solid var(--input-border)'
+              }}
+            >
+              {EFFORT_LABELS[e]}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -579,8 +609,8 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
 
           {/* Exercise sections */}
           {exStates.map((ex, ei) => (
-            <div key={ex.id} style={{ marginBottom:'16px', borderRadius:'12px', overflow:'hidden' }}>
-              <div style={{ padding:'14px', background:'rgba(10,132,255,0.12)' }}>
+            <div key={ex.id} style={{ marginBottom:'16px', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--card-border)' }}>
+              <div style={{ padding:'14px', background:'var(--bg2)' }}>
                 <button onClick={() => toggleCollapse(ei)} style={{
                   width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', textAlign:'left'
                 }}>
@@ -601,7 +631,7 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
                 </button>
               </div>
               {!ex.collapsed && (
-                <div style={{ padding:'12px', background:'var(--bg2)', display:'flex', flexDirection:'column', gap:'12px' }}>
+                <div style={{ padding:'12px', background:'var(--bg)', display:'flex', flexDirection:'column', gap:'12px' }}>
                   {ex.sets.map((s, si) => (
                     <SetEditor
                       key={s.id}
@@ -613,10 +643,11 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
                   ))}
                   <button onClick={() => addSet(ei)} style={{
                     display:'block', width:'100%', padding:'10px',
-                    background:'rgba(10,132,255,0.15)', color:'var(--blue)',
-                    fontSize:'14px', fontWeight:600, borderRadius:'8px', textAlign:'center'
+                    background:'transparent', color:'var(--blue)',
+                    fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)', textAlign:'center',
+                    border:'1px dashed var(--input-border)'
                   }}>
-                    <Icon name="plus" size={16} /> Add Set
+                    <Icon name="plus" size={14} /> Add Set
                   </button>
                 </div>
               )}
@@ -627,26 +658,27 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
       {showCancelConfirm && (
         <div className="fade-in" onClick={() => setShowCancelConfirm(false)} style={{
           position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
-          display:'flex', alignItems:'flex-end', justifyContent:'center',
-          padding:'0 8px', paddingBottom:'calc(var(--safe-bottom) + 8px)'
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px'
         }}>
-          <div onClick={e => e.stopPropagation()} style={{ width:'100%', maxWidth:'400px' }}>
-            <div className="modal-enter" style={{ borderRadius:'14px', overflow:'hidden', marginBottom:'8px' }}>
-              <div style={{ padding:'14px 16px', background:'var(--bg3)', textAlign:'center' }}>
-                <div style={{ fontSize:'13px', color:'var(--text2)', marginBottom:'2px' }}>Discard Workout?</div>
-                <div style={{ fontSize:'13px', color:'var(--text3)' }}>Your workout data will be lost.</div>
-              </div>
+          <div onClick={e => e.stopPropagation()} style={{
+            width:'100%', maxWidth:'320px', background:'var(--card)',
+            borderRadius:'12px', border:'1px solid var(--card-border)',
+            boxShadow:'var(--shadow-lg)', overflow:'hidden'
+          }}>
+            <div style={{ padding:'20px 20px 16px', textAlign:'center' }}>
+              <div style={{ fontSize:'17px', fontWeight:600 }}>Discard Workout?</div>
+              <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'6px', lineHeight:'1.4' }}>Your workout data will be lost.</div>
+            </div>
+            <div style={{ display:'flex', gap:'8px', padding:'0 16px 16px' }}>
+              <button onClick={() => setShowCancelConfirm(false)} style={{
+                flex:1, padding:'10px', fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)',
+                border:'1px solid var(--input-border)', background:'var(--card)', color:'var(--text)'
+              }}>Keep Editing</button>
               <button onClick={onClose} style={{
-                width:'100%', padding:'16px', background:'var(--bg3)',
-                fontSize:'20px', color:'var(--red)', fontWeight:600,
-                borderTop:'1px solid var(--bg4)', textAlign:'center'
+                flex:1, padding:'10px', fontSize:'14px', fontWeight:600, borderRadius:'var(--radius)',
+                background:'var(--red)', color:'#fff', border:'none'
               }}>Discard</button>
             </div>
-            <button onClick={() => setShowCancelConfirm(false)} style={{
-              width:'100%', padding:'16px', background:'var(--bg3)',
-              borderRadius:'14px', fontSize:'20px', color:'var(--blue)',
-              fontWeight:600, textAlign:'center'
-            }}>Keep Editing</button>
           </div>
         </div>
       )}
@@ -1222,12 +1254,35 @@ function App() {
     });
   };
 
+  const [editingName, setEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState('');
+
+  const handleStartEdit = () => {
+    const ex = getExercise(data, currentView.params.catId, currentView.params.exId);
+    if (ex) {
+      setEditNameValue(ex.name);
+      setEditingName(true);
+    }
+  };
+
+  const handleSaveName = () => {
+    if (!editNameValue.trim()) return;
+    const newData = JSON.parse(JSON.stringify(data));
+    const ex = getExercise(newData, currentView.params.catId, currentView.params.exId);
+    if (ex) {
+      ex.name = editNameValue.trim();
+      updateData(newData);
+    }
+    setEditingName(false);
+  };
+
   if (!data) return null;
 
   let headerTitle = '';
   let showBack = viewStack.length > 1;
   let showArchiveBtn = false;
   let showAddBtn = false;
+  let showEditBtn = false;
 
   if (currentView.view === 'category') {
     const cat = CATEGORIES.find(c => c.id === currentTab);
@@ -1237,6 +1292,7 @@ function App() {
   } else if (currentView.view === 'detail') {
     const ex = getExercise(data, currentView.params.catId, currentView.params.exId);
     headerTitle = ex ? ex.name : 'Exercise';
+    showEditBtn = true;
   } else if (currentView.view === 'settings') {
     headerTitle = 'Settings';
   }
@@ -1249,15 +1305,36 @@ function App() {
         background:'var(--bg)', borderBottom:'1px solid var(--bg3)', flexShrink:0
       }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px', flex:1, minWidth:0 }}>
             {showBack && (
-              <button onClick={goBack} style={{ color:'var(--blue)', padding:'6px' }}>
+              <button onClick={() => { setEditingName(false); goBack(); }} style={{ color:'var(--blue)', padding:'6px', flexShrink:0 }}>
                 <Icon name="chevron-left" size={22} />
               </button>
             )}
-            <h1 style={{ fontSize:'28px', fontWeight:700 }}>{headerTitle}</h1>
+            {editingName ? (
+              <input
+                autoFocus
+                value={editNameValue}
+                onChange={e => setEditNameValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); }}
+                style={{ fontSize:'22px', fontWeight:700, padding:'4px 8px', flex:1, minWidth:0 }}
+              />
+            ) : (
+              <h1 style={{ fontSize:'28px', fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{headerTitle}</h1>
+            )}
           </div>
-          <div style={{ display:'flex', gap:'8px' }}>
+          <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
+            {showEditBtn && !editingName && (
+              <button onClick={handleStartEdit} style={{ padding:'6px', color:'var(--blue)' }}>
+                <Icon name="edit" size={20} />
+              </button>
+            )}
+            {editingName && (
+              <>
+                <button onClick={() => setEditingName(false)} style={{ padding:'6px', color:'var(--text3)', fontSize:'14px', fontWeight:500 }}>Cancel</button>
+                <button onClick={handleSaveName} style={{ padding:'6px', color:'var(--blue)', fontSize:'14px', fontWeight:600 }}>Save</button>
+              </>
+            )}
             {showArchiveBtn && (
               <button onClick={() => setModal('archived')} style={{ padding:'6px', color:'var(--blue)' }}>
                 <Icon name="archive" size={22} />
