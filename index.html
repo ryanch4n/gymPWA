@@ -525,6 +525,8 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
   const [exStates, setExStates] = useState(() =>
     exercises.map(ex => {
       let sets;
+      const latest = getLatestSession(ex);
+      const lastSets = latest && latest.sets.length > 0 ? latest.sets : null;
       if (editSession) {
         const editEx = editSession.exercises.find(e => e.id === ex.id);
         if (editEx && editEx.sets.length > 0) {
@@ -533,14 +535,13 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
           sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
         }
       } else {
-        const latest = getLatestSession(ex);
-        if (latest && latest.sets.length > 0) {
-          sets = latest.sets.map(s => ({ id: uuid(), weight: s.weight, reps: s.reps, effort: 0 }));
+        if (lastSets) {
+          sets = lastSets.map(s => ({ id: uuid(), weight: s.weight, reps: 0, effort: 0 }));
         } else {
           sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
         }
       }
-      return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: false };
+      return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: false, lastSets };
     })
   );
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -615,10 +616,12 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
                 }}>
                   <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
                     <div style={{ fontSize:'16px', fontWeight:600 }}>{ex.name}</div>
-                    <div style={{ fontSize:'12px', color:'var(--text2)' }}>{ex.repRange}</div>
+                    <div style={{ fontSize:'12px', color:'var(--text3)' }}>
+                      {ex.lastSets ? 'Last: ' + ex.lastSets.map(s => s.weight + '×' + s.reps).join(', ') : ex.repRange}
+                    </div>
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                    <span style={{ fontSize:'14px', color:'var(--text2)' }}>{ex.sets.length} {ex.sets.length === 1 ? 'set' : 'sets'}</span>
+                    <span style={{ fontSize:'14px', color:'var(--text2)' }}>{ex.sets.filter(s => s.reps > 0).length}/{ex.sets.length}</span>
                     <span style={{
                       color:'var(--text3)', transition:'transform 0.2s',
                       transform: ex.collapsed ? 'rotate(-90deg)' : 'none',
@@ -628,6 +631,20 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
                     </span>
                   </div>
                 </button>
+                {(() => {
+                  const filled = ex.sets.filter(s => s.reps > 0).length;
+                  const total = ex.sets.length;
+                  const pct = total > 0 ? (filled / total) * 100 : 0;
+                  return (
+                    <div style={{ height:'3px', background:'var(--bg3)', borderRadius:'2px', marginTop:'10px', overflow:'hidden' }}>
+                      <div style={{
+                        height:'100%', borderRadius:'2px', transition:'width 0.3s ease',
+                        width: pct + '%',
+                        background: pct >= 100 ? 'var(--green)' : 'var(--blue)'
+                      }} />
+                    </div>
+                  );
+                })()}
               </div>
               {!ex.collapsed && (
                 <div style={{ padding:'12px', background:'var(--bg)', display:'flex', flexDirection:'column', gap:'12px' }}>
@@ -785,7 +802,7 @@ function ArchivedModal({ catId, data, onRestore, onDelete, onClose }) {
 }
 
 // --- Category View ---
-function CategoryView({ catId, data, onNavigateDetail, onNewWorkout }) {
+function CategoryView({ catId, data, onNavigateDetail }) {
   const exercises = getActiveExercises(data, catId);
 
   if (exercises.length === 0) {
@@ -840,18 +857,6 @@ function CategoryView({ catId, data, onNavigateDetail, onNewWorkout }) {
           </div>
         );
       })}
-      <div style={{
-        position:'fixed', bottom:'calc(50px + var(--safe-bottom))', left:0, right:0,
-        padding:'12px 16px', background:'linear-gradient(transparent, var(--bg) 30%)', zIndex:10
-      }}>
-        <button onClick={() => onNewWorkout(catId)} style={{
-          display:'block', width:'100%', padding:'14px', background:'var(--bg2)',
-          color:'var(--blue)', fontSize:'17px', fontWeight:600, borderRadius:'12px', textAlign:'center',
-          border:'1px solid var(--bg3)'
-        }}>
-          <Icon name="play" size={18} /> New Workout
-        </button>
-      </div>
     </div>
   );
 }
@@ -1187,13 +1192,6 @@ function SettingsView({ data, onDataChange }) {
             display:'flex', justifyContent:'space-between', alignItems:'center',
             padding:'13px 16px', borderBottom:'1px solid var(--bg3)'
           }}>
-            <span style={{ fontSize:'16px' }}>Version</span>
-            <span style={{ fontSize:'16px', color:'var(--text3)' }}>b3e6997</span>
-          </div>
-          <div style={{
-            display:'flex', justifyContent:'space-between', alignItems:'center',
-            padding:'13px 16px', borderBottom:'1px solid var(--bg3)'
-          }}>
             <span style={{ fontSize:'16px' }}>Storage</span>
             <span style={{ fontSize:'16px', color:'var(--text3)' }}>localStorage</span>
           </div>
@@ -1448,6 +1446,11 @@ function App() {
                 <Icon name="plus" size={22} />
               </button>
             )}
+            {showAddBtn && (
+              <button onClick={() => handleNewWorkout(currentTab)} style={{ padding:'6px', color:'var(--blue)' }}>
+                <Icon name="play" size={20} />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1459,7 +1462,6 @@ function App() {
             catId={currentTab}
             data={data}
             onNavigateDetail={(catId, exId) => navigate('detail', { catId, exId })}
-            onNewWorkout={handleNewWorkout}
           />
         )}
         {currentView.view === 'detail' && (
