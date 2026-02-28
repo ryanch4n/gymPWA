@@ -111,6 +111,7 @@ const ICON_PATHS = {
   'play': '<polygon points="6 3 20 12 6 21 6 3"/>',
   'ellipsis-vertical': '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
   'edit': '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
+  'circle-check': '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
 };
 
 function Icon({ name, size = 22, style = {} }) {
@@ -621,7 +622,10 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
                     </div>
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                    <span style={{ fontSize:'14px', color:'var(--text2)' }}>{ex.sets.filter(s => s.reps > 0).length}/{ex.sets.length}</span>
+                    {ex.sets.length > 0 && ex.sets.every(s => s.reps > 0) && (
+                      <span style={{ color:'var(--green)', display:'flex' }}><Icon name="circle-check" size={16} /></span>
+                    )}
+                    <span style={{ fontSize:'14px', color: ex.sets.length > 0 && ex.sets.every(s => s.reps > 0) ? 'var(--green)' : 'var(--text2)' }}>{ex.sets.filter(s => s.reps > 0).length}/{ex.sets.length}</span>
                     <span style={{
                       color:'var(--text3)', transition:'transform 0.2s',
                       transform: ex.collapsed ? 'rotate(-90deg)' : 'none',
@@ -864,6 +868,7 @@ function CategoryView({ catId, data, onNavigateDetail }) {
 // --- Exercise Detail View ---
 function ProgressChart({ sessions }) {
   const [mode, setMode] = useState('weight');
+  const [selectedIdx, setSelectedIdx] = useState(null);
 
   // Sort chronologically for the chart
   const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
@@ -882,9 +887,10 @@ function ProgressChart({ sessions }) {
 
   const W = 320;
   const H = 140;
-  const padX = 0;
+  const longestLabel = Math.round(maxVal).toLocaleString().length;
+  const padX = longestLabel * 7 + 6;
   const padY = 16;
-  const chartW = W - padX * 2;
+  const chartW = W - padX - 4;
   const chartH = H - padY * 2;
 
   const getX = (i) => padX + (i / (points.length - 1)) * chartW;
@@ -907,13 +913,13 @@ function ProgressChart({ sessions }) {
 
   return (
     <div style={{
-      margin:'0 16px 8px', background:'var(--card)', borderRadius:'var(--radius)',
+      margin:'12px 16px 8px', background:'var(--card)', borderRadius:'var(--radius)',
       border:'1px solid var(--card-border)', overflow:'hidden', boxShadow:'var(--shadow)'
     }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 0' }}>
         <div style={{ display:'flex', gap:'4px' }}>
           {['weight','volume'].map(m => (
-            <button key={m} onClick={() => setMode(m)} style={{
+            <button key={m} onClick={() => { setMode(m); setSelectedIdx(null); }} style={{
               padding:'5px 12px', borderRadius:'6px', fontSize:'12px', fontWeight:600,
               background: mode === m ? 'var(--blue)' : 'transparent',
               color: mode === m ? '#fff' : 'var(--text3)',
@@ -933,9 +939,6 @@ function ProgressChart({ sessions }) {
       </div>
 
       <div style={{ padding:'8px 14px 4px' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'var(--text3)', marginBottom:'4px' }}>
-          <span>{formatVal(maxVal)}lbs</span>
-        </div>
         <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', display:'block' }}>
           <defs>
             <linearGradient id={'grad-' + mode} x1="0" y1="0" x2="0" y2="1">
@@ -943,19 +946,46 @@ function ProgressChart({ sessions }) {
               <stop offset="100%" stopColor="var(--blue)" stopOpacity="0"/>
             </linearGradient>
           </defs>
-          {/* Grid lines */}
-          {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+          {/* Grid lines + Y labels */}
+          {[0, 0.5, 1].map(pct => {
             const y = padY + chartH - pct * chartH;
-            return <line key={pct} x1={padX} y1={y} x2={W - padX} y2={y} stroke="var(--card-border)" strokeWidth="0.5" />;
+            const val = minVal + pct * range;
+            return <React.Fragment key={pct}>
+              <line x1={padX} y1={y} x2={W - 4} y2={y} stroke="var(--card-border)" strokeWidth="0.5" />
+              <text x={padX - 4} y={y + 3.5} textAnchor="end" fontSize="9" fill="var(--text3)">{formatVal(val)}</text>
+            </React.Fragment>;
           })}
           {/* Area fill */}
           <path d={areaD} fill={`url(#grad-${mode})`} />
           {/* Line */}
           <path d={pathD} fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          {/* Dots */}
+          {/* Dots + tooltip */}
           {points.map((p, i) => {
             const v = mode === 'weight' ? p.weight : p.volume;
-            return <circle key={i} cx={getX(i)} cy={getY(v)} r="3" fill="var(--blue)" />;
+            const cx = getX(i);
+            const cy = getY(v);
+            const isSelected = selectedIdx === i;
+            return <React.Fragment key={i}>
+              {isSelected && (
+                <>
+                  <line x1={cx} y1={padY} x2={cx} y2={padY + chartH} stroke="var(--blue)" strokeWidth="0.5" strokeDasharray="3,2" />
+                  {(() => {
+                    const label = formatVal(v) + (mode === 'weight' ? 'lbs' : '') + '  ' + p.date.slice(5).replace('-','/');
+                    const labelW = label.length * 5.2 + 12;
+                    let tx = cx - labelW / 2;
+                    if (tx < 2) tx = 2;
+                    if (tx + labelW > W - 2) tx = W - 2 - labelW;
+                    const ty = cy - 18;
+                    return <>
+                      <rect x={tx} y={ty} width={labelW} height={16} rx="4" fill="var(--bg4)" />
+                      <text x={tx + labelW / 2} y={ty + 11.5} textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--text)">{label}</text>
+                    </>;
+                  })()}
+                </>
+              )}
+              <circle cx={cx} cy={cy} r={isSelected ? 5 : 3} fill="var(--blue)" />
+              <circle cx={cx} cy={cy} r="14" fill="transparent" onClick={() => setSelectedIdx(isSelected ? null : i)} />
+            </React.Fragment>;
           })}
         </svg>
         <div style={{ display:'flex', justifyContent:'space-between', fontSize:'10px', color:'var(--text3)', marginTop:'4px' }}>
@@ -980,9 +1010,13 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
   const bestSingle = allSetsWithDate.length > 0
     ? allSetsWithDate.reduce((best, s) => (s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) ? s : best, allSetsWithDate[0])
     : null;
-  const bestVolume = sessions.length > 0
-    ? Math.max(...sessions.map(s => (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0)))
-    : 0;
+  const bestVolSession = sessions.length > 0
+    ? sessions.reduce((best, s) => {
+        const vol = (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0);
+        return vol > (best.vol || 0) ? { vol, date: s.date } : best;
+      }, { vol: 0, date: null })
+    : { vol: 0, date: null };
+  const bestVolume = bestVolSession.vol;
   const lastSession = sessions.length > 0 ? sessions[0] : null;
   const lastTopSet = lastSession ? Math.max(...(lastSession.sets || []).map(s => s.weight)) : 0;
 
@@ -990,40 +1024,21 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
 
   return (
     <div className="slide-in">
-      <div style={{
-        textAlign:'center', padding:'16px', margin:'12px 16px 8px',
-        background:'var(--bg2)', borderRadius:'12px'
-      }}>
-        <div style={{ fontSize:'12px', color:'var(--text3)' }}>Target Rep Range</div>
-        <div style={{ fontSize:'22px', fontWeight:600, marginTop:'2px' }}>{ex.repRange}</div>
-      </div>
-
       <ProgressChart sessions={sessions} />
 
       {sessions.length > 0 && (
         <div style={{ display:'flex', gap:'8px', margin:'0 16px 8px' }}>
-          <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
-            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>PR</div>
-            <div style={{ fontSize:'18px', fontWeight:700, marginTop:'4px' }}>
-              {bestSingle ? `${Math.round(bestSingle.weight)}lbs` : '—'}
+          {[
+            { label: 'PR', value: bestSingle ? `${Math.round(bestSingle.weight)}lbs × ${bestSingle.reps}` : '—', date: bestSingle ? formatDate(bestSingle.date) : '\u00A0' },
+            { label: 'Best Volume', value: bestVolume > 0 ? formatWeight(bestVolume) + 'lbs' : '—', date: bestVolSession.date ? formatDate(bestVolSession.date) : '\u00A0' },
+            { label: 'Last Top Set', value: lastTopSet > 0 ? Math.round(lastTopSet) + 'lbs' : '—', date: lastSession ? formatDate(lastSession.date) : '\u00A0' }
+          ].map((card, i) => (
+            <div key={i} style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
+              <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px', height:'14px' }}>{card.label}</div>
+              <div style={{ fontSize:'17px', fontWeight:700, marginTop:'6px', height:'22px', display:'flex', alignItems:'center', justifyContent:'center' }}>{card.value}</div>
+              <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:'6px', height:'14px' }}>{card.date}</div>
             </div>
-            {bestSingle && <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>&times;{bestSingle.reps} reps</div>}
-            {bestSingle && <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:'2px' }}>{formatDate(bestSingle.date)}</div>}
-          </div>
-          <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
-            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>Best Volume</div>
-            <div style={{ fontSize:'18px', fontWeight:700, marginTop:'4px' }}>
-              {formatWeight(bestVolume)}lbs
-            </div>
-            <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>single session</div>
-          </div>
-          <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
-            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>Last Top Set</div>
-            <div style={{ fontSize:'18px', fontWeight:700, marginTop:'4px' }}>
-              {lastTopSet > 0 ? `${Math.round(lastTopSet)}lbs` : '—'}
-            </div>
-            <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>{lastSession ? formatDate(lastSession.date) : ''}</div>
-          </div>
+          ))}
         </div>
       )}
 
