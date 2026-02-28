@@ -19,7 +19,7 @@
   --card: #18181b; --card-border: #27272a;
   --text: #fafafa; --text2: #a1a1aa; --text3: #71717a;
   --blue: #3b82f6; --red: #ef4444; --green: #22c55e; --yellow: #eab308; --orange: #f97316;
-  --effort-green: #22c55e; --effort-yellow: #eab308; --effort-orange: #f97316; --effort-red: #ef4444;
+  --effort-green: #22c55e; --effort-yellow: #facc15; --effort-orange: #f97316;
   --ring: rgba(59,130,246,0.5);
   --input-bg: #18181b; --input-border: #3f3f46;
   --safe-top: env(safe-area-inset-top, 0px);
@@ -34,7 +34,7 @@
     --card: #fff; --card-border: #e5e7eb;
     --text: #09090b; --text2: #52525b; --text3: #a1a1aa;
     --blue: #2563eb; --red: #dc2626; --green: #16a34a; --yellow: #ca8a04; --orange: #ea580c;
-    --effort-green: #16a34a; --effort-yellow: #a16207; --effort-orange: #c2410c; --effort-red: #dc2626;
+    --effort-green: #22c55e; --effort-yellow: #eab308; --effort-orange: #f97316;
     --ring: rgba(37,99,235,0.3);
     --input-bg: #fff; --input-border: #d1d5db;
     --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
@@ -85,8 +85,8 @@ const CATEGORIES = [
   { id:'abs', name:'Abs', iconName:'target' }
 ];
 const REP_RANGES = ['6-8 Reps','8-10 Reps','8-12 Reps','10-12 Reps','12-15 Reps','15-20 Reps','Til Failure'];
-const EFFORT_LABELS = ['Clean','Hard','Very Hard','Failure'];
-const EFFORT_COLORS = ['var(--effort-green)','var(--effort-yellow)','var(--effort-orange)','var(--effort-red)'];
+const EFFORT_LABELS = ['Clean','Hard','Very Hard'];
+const EFFORT_COLORS = ['var(--effort-green)','var(--effort-yellow)','var(--effort-orange)'];
 
 // ==================== ICONS ====================
 const ICON_PATHS = {
@@ -159,6 +159,7 @@ function loadData() {
 }
 
 function saveData(data) {
+  data._lastSaved = todayStr();
   localStorage.setItem(DB_KEY, JSON.stringify(data));
 }
 
@@ -268,10 +269,9 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }) {
 // --- Set Badge ---
 function SetBadge({ set, compact }) {
   const effortStyles = [
-    { background:'rgba(48,209,88,0.2)', color:'var(--green)', border:'1px solid rgba(48,209,88,0.4)' },
-    { background:'rgba(255,214,10,0.2)', color:'var(--yellow)', border:'1px solid rgba(255,214,10,0.4)' },
-    { background:'rgba(255,159,10,0.2)', color:'var(--orange)', border:'1px solid rgba(255,159,10,0.4)' },
-    { background:'rgba(255,69,58,0.2)', color:'var(--red)', border:'1px solid rgba(255,69,58,0.4)' },
+    { background:'rgba(34,197,94,0.15)', color:'var(--effort-green)', border:'1px solid rgba(34,197,94,0.3)' },
+    { background:'rgba(250,204,21,0.15)', color:'var(--effort-yellow)', border:'1px solid rgba(250,204,21,0.3)' },
+    { background:'rgba(249,115,22,0.15)', color:'var(--effort-orange)', border:'1px solid rgba(249,115,22,0.3)' },
   ];
   const s = effortStyles[set.effort] || effortStyles[0];
   return (
@@ -379,13 +379,12 @@ function SetEditor({ setIndex, set, onUpdate, onDelete }) {
         </div>
       </div>
       <div style={{ display:'flex', gap:'6px' }}>
-        {[0,1,2,3].map(e => {
+        {[0,1,2].map(e => {
           const selected = set.effort === e;
           const colors = [
-            { bg:'var(--effort-green)', bgMuted:'transparent', border:'var(--effort-green)' },
-            { bg:'var(--effort-yellow)', bgMuted:'transparent', border:'var(--effort-yellow)' },
-            { bg:'var(--effort-orange)', bgMuted:'transparent', border:'var(--effort-orange)' },
-            { bg:'var(--effort-red)', bgMuted:'transparent', border:'var(--effort-red)' },
+            { bg:'var(--effort-green)' },
+            { bg:'var(--effort-yellow)' },
+            { bg:'var(--effort-orange)' },
           ][e];
           return (
             <button
@@ -586,7 +585,7 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
     }}>
         <div style={{
           display:'flex', justifyContent:'space-between', alignItems:'center',
-          padding:'calc(var(--safe-top) + 8px) 16px 8px', borderBottom:'1px solid var(--bg3)', flexShrink:0,
+          padding:'calc(var(--safe-top) + 12px) 16px 12px', borderBottom:'1px solid var(--card-border)', flexShrink:0,
           background:'var(--bg)'
         }}>
           <button onClick={() => setShowCancelConfirm(true)} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Cancel</button>
@@ -822,17 +821,16 @@ function CategoryView({ catId, data, onNavigateDetail, onNewWorkout }) {
                 {latest && (() => {
                   const allSets = (ex.sessions || []).flatMap(s => s.sets || []);
                   const best = allSets.reduce((b, s) => s.weight > b.weight ? s : b, allSets[0]);
-                  const bestVol = Math.max(...(ex.sessions || []).map(s => (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0)));
-                  const fmt = (w) => Math.round(w).toLocaleString();
+                  const lastTop = Math.max(...(latest.sets || []).map(s => s.weight));
                   return (
                     <div style={{ display:'flex', flexDirection:'column', gap:'6px', alignItems:'flex-end', marginLeft:'12px', flexShrink:0 }}>
                       <div style={{ textAlign:'right' }}>
-                        <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>Best</div>
+                        <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>PR</div>
                         <div style={{ fontSize:'15px', fontWeight:700 }}>{Math.round(best.weight)}lbs</div>
                       </div>
                       <div style={{ textAlign:'right' }}>
-                        <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>Volume</div>
-                        <div style={{ fontSize:'15px', fontWeight:700 }}>{fmt(bestVol)}lbs</div>
+                        <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>Last</div>
+                        <div style={{ fontSize:'15px', fontWeight:700 }}>{Math.round(lastTop)}lbs</div>
                       </div>
                     </div>
                   );
@@ -859,6 +857,111 @@ function CategoryView({ catId, data, onNavigateDetail, onNewWorkout }) {
 }
 
 // --- Exercise Detail View ---
+function ProgressChart({ sessions }) {
+  const [mode, setMode] = useState('weight');
+
+  // Sort chronologically for the chart
+  const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
+  if (sorted.length < 2) return null;
+
+  const points = sorted.map(s => ({
+    date: s.date,
+    weight: Math.max(...(s.sets || []).map(set => set.weight)),
+    volume: (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0)
+  }));
+
+  const values = points.map(p => mode === 'weight' ? p.weight : p.volume);
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const range = maxVal - minVal || 1;
+
+  const W = 320;
+  const H = 140;
+  const padX = 0;
+  const padY = 16;
+  const chartW = W - padX * 2;
+  const chartH = H - padY * 2;
+
+  const getX = (i) => padX + (i / (points.length - 1)) * chartW;
+  const getY = (v) => padY + chartH - ((v - minVal) / range) * chartH;
+
+  const pathD = points.map((p, i) => {
+    const v = mode === 'weight' ? p.weight : p.volume;
+    return `${i === 0 ? 'M' : 'L'}${getX(i).toFixed(1)},${getY(v).toFixed(1)}`;
+  }).join(' ');
+
+  const areaD = pathD + ` L${getX(points.length - 1).toFixed(1)},${H} L${getX(0).toFixed(1)},${H} Z`;
+
+  const lastVal = values[values.length - 1];
+  const firstVal = values[0];
+  const trend = lastVal - firstVal;
+  const trendPct = firstVal > 0 ? ((trend / firstVal) * 100).toFixed(0) : 0;
+  const trendUp = trend >= 0;
+
+  const formatVal = (v) => Math.round(v).toLocaleString();
+
+  return (
+    <div style={{
+      margin:'0 16px 8px', background:'var(--card)', borderRadius:'var(--radius)',
+      border:'1px solid var(--card-border)', overflow:'hidden', boxShadow:'var(--shadow)'
+    }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 0' }}>
+        <div style={{ display:'flex', gap:'4px' }}>
+          {['weight','volume'].map(m => (
+            <button key={m} onClick={() => setMode(m)} style={{
+              padding:'5px 12px', borderRadius:'6px', fontSize:'12px', fontWeight:600,
+              background: mode === m ? 'var(--blue)' : 'transparent',
+              color: mode === m ? '#fff' : 'var(--text3)',
+              border: mode === m ? 'none' : '1px solid var(--input-border)',
+              transition:'all 0.15s', textTransform:'capitalize'
+            }}>{m === 'weight' ? 'Max Weight' : 'Volume'}</button>
+          ))}
+        </div>
+        <div style={{ textAlign:'right' }}>
+          <span style={{
+            fontSize:'12px', fontWeight:600,
+            color: trendUp ? 'var(--green)' : 'var(--red)'
+          }}>
+            {trendUp ? '↑' : '↓'} {Math.abs(trendPct)}%
+          </span>
+        </div>
+      </div>
+
+      <div style={{ padding:'8px 14px 4px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'var(--text3)', marginBottom:'4px' }}>
+          <span>{formatVal(maxVal)}lbs</span>
+        </div>
+        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', display:'block' }}>
+          <defs>
+            <linearGradient id={'grad-' + mode} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--blue)" stopOpacity="0.2"/>
+              <stop offset="100%" stopColor="var(--blue)" stopOpacity="0"/>
+            </linearGradient>
+          </defs>
+          {/* Grid lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+            const y = padY + chartH - pct * chartH;
+            return <line key={pct} x1={padX} y1={y} x2={W - padX} y2={y} stroke="var(--card-border)" strokeWidth="0.5" />;
+          })}
+          {/* Area fill */}
+          <path d={areaD} fill={`url(#grad-${mode})`} />
+          {/* Line */}
+          <path d={pathD} fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Dots */}
+          {points.map((p, i) => {
+            const v = mode === 'weight' ? p.weight : p.volume;
+            return <circle key={i} cx={getX(i)} cy={getY(v)} r="3" fill="var(--blue)" />;
+          })}
+        </svg>
+        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'10px', color:'var(--text3)', marginTop:'4px' }}>
+          <span>{sorted[0].date.slice(5).replace('-','/')}</span>
+          <span>{sorted[sorted.length - 1].date.slice(5).replace('-','/')}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession }) {
   const ex = getExercise(data, catId, exId);
   if (!ex) return null;
@@ -867,35 +970,40 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
   const sessions = [...(ex.sessions || [])].sort((a, b) => b.date.localeCompare(a.date));
 
   // Compute stats
+  const allSetsWithDate = sessions.flatMap(s => (s.sets || []).map(set => ({ ...set, date: s.date })));
   const allSets = sessions.flatMap(s => s.sets || []);
-  const bestSingle = allSets.length > 0
-    ? allSets.reduce((best, s) => (s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) ? s : best, allSets[0])
+  const bestSingle = allSetsWithDate.length > 0
+    ? allSetsWithDate.reduce((best, s) => (s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) ? s : best, allSetsWithDate[0])
     : null;
   const bestVolume = sessions.length > 0
     ? Math.max(...sessions.map(s => (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0)))
     : 0;
-  const allTimeTotal = allSets.reduce((sum, s) => sum + s.weight * s.reps, 0);
+  const lastSession = sessions.length > 0 ? sessions[0] : null;
+  const lastTopSet = lastSession ? Math.max(...(lastSession.sets || []).map(s => s.weight)) : 0;
 
   const formatWeight = (w) => Math.round(w).toLocaleString();
 
   return (
     <div className="slide-in">
       <div style={{
-        textAlign:'center', padding:'16px', margin:'0 16px 8px',
+        textAlign:'center', padding:'16px', margin:'12px 16px 8px',
         background:'var(--bg2)', borderRadius:'12px'
       }}>
         <div style={{ fontSize:'12px', color:'var(--text3)' }}>Target Rep Range</div>
         <div style={{ fontSize:'22px', fontWeight:600, marginTop:'2px' }}>{ex.repRange}</div>
       </div>
 
+      <ProgressChart sessions={sessions} />
+
       {sessions.length > 0 && (
         <div style={{ display:'flex', gap:'8px', margin:'0 16px 8px' }}>
           <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
-            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>Best Single</div>
+            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>PR</div>
             <div style={{ fontSize:'18px', fontWeight:700, marginTop:'4px' }}>
               {bestSingle ? `${Math.round(bestSingle.weight)}lbs` : '—'}
             </div>
             {bestSingle && <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>&times;{bestSingle.reps} reps</div>}
+            {bestSingle && <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:'2px' }}>{formatDate(bestSingle.date)}</div>}
           </div>
           <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
             <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>Best Volume</div>
@@ -905,11 +1013,11 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
             <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>single session</div>
           </div>
           <div style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
-            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>All-Time</div>
+            <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px' }}>Last Top Set</div>
             <div style={{ fontSize:'18px', fontWeight:700, marginTop:'4px' }}>
-              {formatWeight(allTimeTotal)}lbs
+              {lastTopSet > 0 ? `${Math.round(lastTopSet)}lbs` : '—'}
             </div>
-            <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>{sessions.length} sessions</div>
+            <div style={{ fontSize:'12px', color:'var(--text2)', marginTop:'2px' }}>{lastSession ? formatDate(lastSession.date) : ''}</div>
           </div>
         </div>
       )}
@@ -982,7 +1090,10 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
 // --- Settings View ---
 function SettingsView({ data, onDataChange }) {
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const newData = { ...data, _lastExport: todayStr() };
+    saveData(newData);
+    onDataChange(newData);
+    const blob = new Blob([JSON.stringify(newData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1070,28 +1181,6 @@ function SettingsView({ data, onDataChange }) {
         <h3 style={{
           fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
           letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
-        }}>Stats</h3>
-        <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
-          {CATEGORIES.map((c, i) => {
-            const total = (data[c.id]?.exercises || []).length;
-            return (
-              <div key={c.id} style={{
-                display:'flex', justifyContent:'space-between', alignItems:'center',
-                padding:'13px 16px',
-                borderBottom: i < CATEGORIES.length - 1 ? '1px solid var(--bg3)' : 'none'
-              }}>
-                <span style={{ fontSize:'16px' }}>{c.name}</span>
-                <span style={{ fontSize:'16px', color:'var(--text3)' }}>{total} exercises</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ margin:'16px' }}>
-        <h3 style={{
-          fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
-          letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
         }}>About</h3>
         <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
           <div style={{
@@ -1103,10 +1192,24 @@ function SettingsView({ data, onDataChange }) {
           </div>
           <div style={{
             display:'flex', justifyContent:'space-between', alignItems:'center',
-            padding:'13px 16px'
+            padding:'13px 16px', borderBottom:'1px solid var(--bg3)'
           }}>
             <span style={{ fontSize:'16px' }}>Storage</span>
             <span style={{ fontSize:'16px', color:'var(--text3)' }}>localStorage</span>
+          </div>
+          <div style={{
+            display:'flex', justifyContent:'space-between', alignItems:'center',
+            padding:'13px 16px', borderBottom:'1px solid var(--bg3)'
+          }}>
+            <span style={{ fontSize:'16px' }}>Last Saved</span>
+            <span style={{ fontSize:'16px', color:'var(--text3)' }}>{data._lastSaved ? formatDate(data._lastSaved) : 'Never'}</span>
+          </div>
+          <div style={{
+            display:'flex', justifyContent:'space-between', alignItems:'center',
+            padding:'13px 16px'
+          }}>
+            <span style={{ fontSize:'16px' }}>Last Exported</span>
+            <span style={{ fontSize:'16px', color:'var(--text3)' }}>{data._lastExport ? formatDate(data._lastExport) : 'Never'}</span>
           </div>
         </div>
       </div>
