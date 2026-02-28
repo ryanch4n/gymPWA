@@ -878,7 +878,6 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
 // --- Add Exercise Modal ---
 function AddExerciseModal({ onSave, onClose }) {
   const [name, setName] = useState('');
-  const [repRange, setRepRange] = useState(REP_RANGES[0]);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -887,7 +886,7 @@ function AddExerciseModal({ onSave, onClose }) {
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave({ name: name.trim(), repRange });
+    onSave({ name: name.trim() });
   };
 
   return (
@@ -908,15 +907,9 @@ function AddExerciseModal({ onSave, onClose }) {
           <button onClick={handleSave} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Save</button>
         </div>
         <div style={{ padding:'16px' }}>
-          <div style={{ marginBottom:'16px' }}>
+          <div>
             <label style={{ display:'block', fontSize:'14px', color:'var(--text2)', marginBottom:'6px', fontWeight:500 }}>Exercise Name</label>
-            <input ref={inputRef} type="text" placeholder="e.g. Bench Press" value={name} onChange={e => setName(e.target.value)} />
-          </div>
-          <div style={{ marginBottom:'16px' }}>
-            <label style={{ display:'block', fontSize:'14px', color:'var(--text2)', marginBottom:'6px', fontWeight:500 }}>Rep Range</label>
-            <select value={repRange} onChange={e => setRepRange(e.target.value)}>
-              {REP_RANGES.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
+            <input ref={inputRef} type="text" placeholder="e.g. Bench Press" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSave(); }} />
           </div>
         </div>
       </div>
@@ -1038,9 +1031,30 @@ function CategoryView({ catId, data, onNavigateDetail }) {
 function ProgressChart({ sessions }) {
   const [mode, setMode] = useState('weight');
   const [selectedIdx, setSelectedIdx] = useState(null);
+  const [dateRange, setDateRange] = useState('all');
+
+  const RANGES = [
+    { key: '1m', label: '1M', months: 1 },
+    { key: '3m', label: '3M', months: 3 },
+    { key: '6m', label: '6M', months: 6 },
+    { key: '1y', label: '1Y', months: 12 },
+    { key: 'all', label: 'All', months: 0 }
+  ];
 
   // Sort chronologically for the chart
-  const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
+  const allSorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
+  if (allSorted.length < 2) return null;
+
+  const sorted = useMemo(() => {
+    if (dateRange === 'all') return allSorted;
+    const r = RANGES.find(r => r.key === dateRange);
+    if (!r || !r.months) return allSorted;
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - r.months);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    return allSorted.filter(s => s.date >= cutoffStr);
+  }, [allSorted.length, dateRange]);
+
   if (sorted.length < 2) return null;
 
   const points = sorted.map(s => ({
@@ -1105,6 +1119,17 @@ function ProgressChart({ sessions }) {
             {trendUp ? '↑' : '↓'} {Math.abs(trendPct)}%
           </span>
         </div>
+      </div>
+
+      <div style={{ display:'flex', gap:'2px', padding:'10px 14px 0' }}>
+        {RANGES.map(r => (
+          <button key={r.key} onClick={() => { setDateRange(r.key); setSelectedIdx(null); }} style={{
+            flex:1, padding:'4px 0', borderRadius:'5px', fontSize:'11px', fontWeight:600,
+            background: dateRange === r.key ? 'var(--bg4)' : 'transparent',
+            color: dateRange === r.key ? 'var(--text)' : 'var(--text3)',
+            border:'none', transition:'all 0.15s'
+          }}>{r.label}</button>
+        ))}
       </div>
 
       <div style={{ padding:'8px 14px 4px' }}>
@@ -1256,16 +1281,18 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
           <div style={{ marginTop:'10px' }}>
             {s.sets.map((set, i) => (
               <div key={i} style={{
-                display:'flex', alignItems:'center', gap:'8px', padding:'4px 0', fontSize:'14px'
+                display:'flex', alignItems:'center', padding:'4px 0', fontSize:'14px'
               }}>
-                <span style={{ color:'var(--text3)', width:'46px' }}>Set {i+1}</span>
-                <span style={{ fontWeight:600, width:'65px' }}>{Math.round(set.weight)}lbs</span>
-                <span style={{ width:'70px' }}>&times; {set.reps} reps</span>
-                <span style={{
-                  width:'12px', height:'12px', borderRadius:'50%', flexShrink:0,
-                  background: EFFORT_COLORS[set.effort] || '#636366'
-                }} />
-                <span style={{ fontSize:'12px', color:'var(--text3)' }}>{EFFORT_LABELS[set.effort] || ''}</span>
+                <span style={{ color:'var(--text3)', flex:1, textAlign:'center' }}>Set {i+1}</span>
+                <span style={{ fontWeight:600, flex:1, textAlign:'center' }}>{Math.round(set.weight)}lbs</span>
+                <span style={{ flex:1, textAlign:'center' }}>&times; {set.reps} reps</span>
+                <span style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+                  <span style={{
+                    width:'10px', height:'10px', borderRadius:'50%', flexShrink:0,
+                    background: EFFORT_COLORS[set.effort] || '#636366'
+                  }} />
+                  <span style={{ fontSize:'12px', color:'var(--text3)' }}>{EFFORT_LABELS[set.effort] || ''}</span>
+                </span>
               </div>
             ))}
           </div>
@@ -1408,6 +1435,7 @@ function App() {
   const [modalParams, setModalParams] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const toast = useToast();
 
   // Init data
   useEffect(() => {
@@ -1475,11 +1503,11 @@ function App() {
     setModal(null);
   };
 
-  const handleAddExercise = ({ name, repRange }) => {
+  const handleAddExercise = ({ name }) => {
     const newData = JSON.parse(JSON.stringify(data));
     if (!newData[currentTab]) return;
     newData[currentTab].exercises.push({
-      id: uuid(), name, repRange, active: true, sessions: []
+      id: uuid(), name, repRange: '', active: true, sessions: []
     });
     updateData(newData);
     setModal(null);
@@ -1502,16 +1530,23 @@ function App() {
   };
 
   const handleEditSession = (catId, exId, dateStr) => {
-    const ex = getExercise(data, catId, exId);
-    if (!ex) return;
-    const session = (ex.sessions || []).find(s => s.date === dateStr);
-    if (!session) return;
+    const allExercises = getActiveExercises(data, catId);
+    const editExercises = [];
+    let note = '';
+    allExercises.forEach(ex => {
+      const session = (ex.sessions || []).find(s => s.date === dateStr);
+      if (session) {
+        editExercises.push({ id: ex.id, sets: session.sets });
+        if (session.note && !note) note = session.note;
+      }
+    });
+    if (editExercises.length === 0) return;
     setModalParams({
       catId,
       editSession: {
-        date: session.date,
-        note: session.note || '',
-        exercises: [{ id: ex.id, sets: session.sets }]
+        date: dateStr,
+        note,
+        exercises: editExercises
       }
     });
     setModal('workout');
@@ -1560,6 +1595,18 @@ function App() {
       updateData(newData);
     }
     setEditingName(false);
+  };
+
+  const handleArchiveExercise = () => {
+    const { catId, exId } = currentView.params;
+    const newData = JSON.parse(JSON.stringify(data));
+    const ex = getExercise(newData, catId, exId);
+    if (ex) {
+      ex.active = false;
+      updateData(newData);
+      goBack();
+      toast('Exercise archived');
+    }
   };
 
   if (!data) return null;
@@ -1625,9 +1672,16 @@ function App() {
                     }}>
                       <button onClick={() => { setShowHeaderMenu(false); handleStartEdit(); }} style={{
                         width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
-                        display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
+                        display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
+                        borderBottom:'1px solid var(--card-border)'
                       }}>
                         <Icon name="edit" size={16} /> Rename
+                      </button>
+                      <button onClick={() => { setShowHeaderMenu(false); handleArchiveExercise(); }} style={{
+                        width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--red)',
+                        display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
+                      }}>
+                        <Icon name="archive" size={16} /> Archive
                       </button>
                     </div>
                   </>
