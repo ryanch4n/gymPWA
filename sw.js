@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gym-v12';
+const CACHE_NAME = 'gym-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -25,5 +25,18 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
+  );
+});
+
+// Handle notification click — focus or open the app
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      if (list.length > 0) {
+        return list[0].focus();
+      }
+      return clients.openWindow('./');
+    })
   );
 });
