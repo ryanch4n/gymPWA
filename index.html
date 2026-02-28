@@ -112,6 +112,8 @@ const ICON_PATHS = {
   'ellipsis-vertical': '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
   'edit': '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
   'circle-check': '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  'sparkles': '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/>',
+  'circle-x': '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
 };
 
 function Icon({ name, size = 22, style = {} }) {
@@ -131,6 +133,43 @@ function Icon({ name, size = 22, style = {} }) {
     />
   );
 }
+
+// ==================== TOAST ====================
+const ToastContext = createContext();
+
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+
+  const showToast = useCallback((message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type, exiting: false }]);
+    setTimeout(() => {
+      setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 300);
+    }, 2500);
+  }, []);
+
+  return (
+    <ToastContext.Provider value={showToast}>
+      {children}
+      <div style={{ position:'fixed', top:'calc(var(--safe-top) + 12px)', left:'16px', right:'16px', zIndex:9999, display:'flex', flexDirection:'column', gap:'8px', pointerEvents:'none' }}>
+        {toasts.map(t => (
+          <div key={t.id} className={t.exiting ? 'fade-out' : 'fade-in'} style={{
+            display:'flex', alignItems:'center', gap:'10px', padding:'12px 16px',
+            background:'var(--card)', border:'1px solid var(--card-border)',
+            borderRadius:'var(--radius)', boxShadow:'var(--shadow-lg)'
+          }}>
+            <Icon name={t.type === 'success' ? 'circle-check' : 'circle-x'} size={18}
+              style={{ color: t.type === 'success' ? 'var(--green)' : 'var(--red)', flexShrink:0 }} />
+            <span style={{ fontSize:'14px', fontWeight:500 }}>{t.message}</span>
+          </div>
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+function useToast() { return useContext(ToastContext); }
 
 // ==================== HELPERS ====================
 function uuid() {
@@ -546,6 +585,9 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
     })
   );
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showWorkoutMenu, setShowWorkoutMenu] = useState(false);
+  const [coachPrompt, setCoachPrompt] = useState(null);
+  const toast = useToast();
 
   const toggleCollapse = (ei) => {
     setExStates(prev => prev.map((ex, i) =>
@@ -577,7 +619,59 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
   };
 
   const handleSave = () => {
-    onSave({ catId, date, note, exercises: exStates });
+    try {
+      const hasAnyData = exStates.some(ex => ex.sets.some(s => s.weight > 0 || s.reps > 0));
+      if (!hasAnyData) {
+        toast('No sets logged — add some data first', 'error');
+        return;
+      }
+      onSave({ catId, date, note, exercises: exStates });
+      toast('Workout saved');
+    } catch (e) {
+      toast('Failed to save workout', 'error');
+    }
+  };
+
+  const handleCoachPrompt = () => {
+    const catExercises = getActiveExercises(data, catId);
+    const lines = [`I'm doing a ${cat.name} workout today (${date}).`];
+    lines.push('');
+    lines.push('Here\'s my recent history for each exercise:');
+    lines.push('');
+    catExercises.forEach(ex => {
+      const sessions = [...(ex.sessions || [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+      lines.push(`**${ex.name}** (target: ${ex.repRange})`);
+      if (sessions.length === 0) {
+        lines.push('  No previous sessions.');
+      } else {
+        sessions.forEach(s => {
+          const setsStr = (s.sets || []).map(set => `${set.weight}lbs×${set.reps}`).join(', ');
+          lines.push(`  ${s.date}: ${setsStr}`);
+        });
+      }
+      lines.push('');
+    });
+
+    // Current workout state
+    const currentLines = exStates.filter(ex => ex.sets.some(s => s.weight > 0 || s.reps > 0));
+    if (currentLines.length > 0) {
+      lines.push('What I\'ve logged so far today:');
+      currentLines.forEach(ex => {
+        const setsStr = ex.sets.filter(s => s.weight > 0 || s.reps > 0).map(s => `${s.weight}lbs×${s.reps} (${EFFORT_LABELS[s.effort]})`).join(', ');
+        lines.push(`  ${ex.name}: ${setsStr}`);
+      });
+      lines.push('');
+    }
+
+    lines.push('Based on my history and today\'s workout, give me specific coaching advice:');
+    lines.push('- Should I increase weight or reps on any exercise? By how much?');
+    lines.push('- Am I progressing well or plateauing anywhere?');
+    lines.push('- Any form or programming tips for my weaker lifts?');
+    lines.push('- What should I focus on for my next session?');
+    lines.push('');
+    lines.push('Keep it concise and actionable.');
+
+    setCoachPrompt(lines.join('\n'));
   };
 
   return (
@@ -590,9 +684,44 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
           padding:'calc(var(--safe-top) + 12px) 16px 12px', borderBottom:'1px solid var(--card-border)', flexShrink:0,
           background:'var(--bg)'
         }}>
-          <button onClick={() => setShowCancelConfirm(true)} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Cancel</button>
+          <div style={{ width:'36px' }} />
           <h2 style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Edit' : cat.name} Workout</h2>
-          <button onClick={handleSave} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Save</button>
+          <div style={{ position:'relative' }}>
+            <button onClick={() => setShowWorkoutMenu(!showWorkoutMenu)} style={{ padding:'6px', color:'var(--text2)' }}>
+              <Icon name="ellipsis-vertical" size={22} />
+            </button>
+            {showWorkoutMenu && (
+              <>
+                <div onClick={() => setShowWorkoutMenu(false)} style={{ position:'fixed', inset:0, zIndex:150 }} />
+                <div style={{
+                  position:'absolute', right:0, top:'100%', marginTop:'4px', zIndex:151,
+                  background:'var(--card)', border:'1px solid var(--card-border)', borderRadius:'var(--radius)',
+                  boxShadow:'var(--shadow-lg)', minWidth:'180px', overflow:'hidden'
+                }}>
+                  <button onClick={() => { setShowWorkoutMenu(false); handleSave(); }} style={{
+                    width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
+                    display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
+                    borderBottom:'1px solid var(--card-border)'
+                  }}>
+                    <Icon name="circle-check" size={16} style={{ color:'var(--green)' }} /> Save Workout
+                  </button>
+                  <button onClick={() => { setShowWorkoutMenu(false); handleCoachPrompt(); }} style={{
+                    width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
+                    display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
+                    borderBottom:'1px solid var(--card-border)'
+                  }}>
+                    <Icon name="sparkles" size={16} style={{ color:'var(--yellow)' }} /> Coach Prompt
+                  </button>
+                  <button onClick={() => { setShowWorkoutMenu(false); setShowCancelConfirm(true); }} style={{
+                    width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--red)',
+                    display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
+                  }}>
+                    <Icon name="x" size={16} /> Discard Workout
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
         {!isEdit && <RestTimerBar />}
         <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', padding:'16px', paddingBottom:'var(--safe-bottom)' }}>
@@ -698,6 +827,46 @@ function WorkoutModal({ catId, data, onSave, onClose, editSession }) {
                 flex:1, padding:'10px', fontSize:'14px', fontWeight:600, borderRadius:'var(--radius)',
                 background:'var(--red)', color:'#fff', border:'none'
               }}>Discard</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {coachPrompt && (
+        <div className="fade-in" onClick={() => setCoachPrompt(null)} style={{
+          position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
+          display:'flex', alignItems:'flex-end', justifyContent:'center'
+        }}>
+          <div onClick={e => e.stopPropagation()} className="modal-enter" style={{
+            width:'100%', maxHeight:'80vh', background:'var(--card)',
+            borderRadius:'16px 16px 0 0', border:'1px solid var(--card-border)',
+            boxShadow:'var(--shadow-lg)', display:'flex', flexDirection:'column',
+            paddingBottom:'var(--safe-bottom)'
+          }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px', borderBottom:'1px solid var(--card-border)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                <Icon name="sparkles" size={18} style={{ color:'var(--yellow)' }} />
+                <span style={{ fontSize:'17px', fontWeight:600 }}>Coach Prompt</span>
+              </div>
+              <button onClick={() => setCoachPrompt(null)} style={{ padding:'4px', color:'var(--text3)' }}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+            <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>
+              <pre style={{
+                fontSize:'13px', lineHeight:'1.5', color:'var(--text2)',
+                whiteSpace:'pre-wrap', wordBreak:'break-word', fontFamily:'inherit'
+              }}>{coachPrompt}</pre>
+            </div>
+            <div style={{ padding:'12px 16px', borderTop:'1px solid var(--card-border)' }}>
+              <button onClick={() => {
+                navigator.clipboard.writeText(coachPrompt).then(() => {
+                  toast('Copied to clipboard');
+                  setCoachPrompt(null);
+                }).catch(() => toast('Failed to copy', 'error'));
+              }} style={{
+                width:'100%', padding:'12px', fontSize:'15px', fontWeight:600,
+                borderRadius:'var(--radius)', background:'var(--blue)', color:'#fff', border:'none'
+              }}>Copy to Clipboard</button>
             </div>
           </div>
         </div>
@@ -1238,6 +1407,7 @@ function App() {
   const [modal, setModal] = useState(null);
   const [modalParams, setModalParams] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
 
   // Init data
   useEffect(() => {
@@ -1441,9 +1611,28 @@ function App() {
           </div>
           <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
             {showEditBtn && !editingName && (
-              <button onClick={handleStartEdit} style={{ padding:'6px', color:'var(--blue)' }}>
-                <Icon name="edit" size={20} />
-              </button>
+              <div style={{ position:'relative' }}>
+                <button onClick={() => setShowHeaderMenu(!showHeaderMenu)} style={{ padding:'6px', color:'var(--text2)' }}>
+                  <Icon name="ellipsis-vertical" size={20} />
+                </button>
+                {showHeaderMenu && (
+                  <>
+                    <div onClick={() => setShowHeaderMenu(false)} style={{ position:'fixed', inset:0, zIndex:50 }} />
+                    <div style={{
+                      position:'absolute', right:0, top:'100%', marginTop:'4px', zIndex:51,
+                      background:'var(--card)', border:'1px solid var(--card-border)', borderRadius:'var(--radius)',
+                      boxShadow:'var(--shadow-lg)', minWidth:'160px', overflow:'hidden'
+                    }}>
+                      <button onClick={() => { setShowHeaderMenu(false); handleStartEdit(); }} style={{
+                        width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
+                        display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
+                      }}>
+                        <Icon name="edit" size={16} /> Rename
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
             {editingName && (
               <>
@@ -1536,7 +1725,7 @@ function App() {
 }
 
 // ==================== MOUNT ====================
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<ToastProvider><App /></ToastProvider>);
 </script>
 </body>
 </html>
