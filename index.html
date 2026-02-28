@@ -19,7 +19,7 @@
   --card: #18181b; --card-border: #27272a;
   --text: #fafafa; --text2: #a1a1aa; --text3: #71717a;
   --blue: #3b82f6; --red: #ef4444; --green: #22c55e; --yellow: #eab308; --orange: #f97316;
-  --effort-green: #22c55e; --effort-yellow: #facc15; --effort-orange: #f97316;
+  --effort-clean: #3b82f6; --effort-yellow: #facc15; --effort-orange: #f97316;
   --ring: rgba(59,130,246,0.5);
   --input-bg: #18181b; --input-border: #3f3f46;
   --safe-top: env(safe-area-inset-top, 0px);
@@ -34,7 +34,7 @@
     --card: #fff; --card-border: #e5e7eb;
     --text: #09090b; --text2: #52525b; --text3: #a1a1aa;
     --blue: #2563eb; --red: #dc2626; --green: #16a34a; --yellow: #ca8a04; --orange: #ea580c;
-    --effort-green: #22c55e; --effort-yellow: #eab308; --effort-orange: #f97316;
+    --effort-clean: #3b82f6; --effort-yellow: #eab308; --effort-orange: #f97316;
     --ring: rgba(37,99,235,0.3);
     --input-bg: #fff; --input-border: #d1d5db;
     --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
@@ -87,7 +87,7 @@ const CATEGORIES = [
 ];
 const REP_RANGES = ['6-8 Reps','8-10 Reps','8-12 Reps','10-12 Reps','12-15 Reps','15-20 Reps','Til Failure'];
 const EFFORT_LABELS = ['Clean','Hard','Very Hard'];
-const EFFORT_COLORS = ['var(--effort-green)','var(--effort-yellow)','var(--effort-orange)'];
+const EFFORT_COLORS = ['var(--effort-clean)','var(--effort-yellow)','var(--effort-orange)'];
 
 // ==================== ICONS ====================
 const ICON_PATHS = {
@@ -324,7 +324,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }) {
 // --- Set Badge ---
 function SetBadge({ set, compact }) {
   const effortStyles = [
-    { background:'rgba(34,197,94,0.15)', color:'var(--effort-green)', border:'1px solid rgba(34,197,94,0.3)' },
+    { background:'rgba(59,130,246,0.15)', color:'var(--effort-clean)', border:'1px solid rgba(59,130,246,0.3)' },
     { background:'rgba(250,204,21,0.15)', color:'var(--effort-yellow)', border:'1px solid rgba(250,204,21,0.3)' },
     { background:'rgba(249,115,22,0.15)', color:'var(--effort-orange)', border:'1px solid rgba(249,115,22,0.3)' },
   ];
@@ -453,7 +453,7 @@ function SetEditor({ setIndex, set, onUpdate, onDelete, prevSet }) {
         {[0,1,2].map(e => {
           const selected = set.effort === e;
           const colors = [
-            { bg:'var(--effort-green)' },
+            { bg:'var(--effort-clean)' },
             { bg:'var(--effort-yellow)' },
             { bg:'var(--effort-orange)' },
           ][e];
@@ -625,11 +625,11 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
   const isEdit = !!editSession;
 
   const [date, setDate] = useState(resumeState ? resumeState.date : (editSession ? editSession.date : todayStr()));
-  const [note, setNote] = useState(resumeState ? resumeState.note : (editSession ? editSession.note || '' : ''));
   const [exStates, setExStates] = useState(() => {
     if (resumeState) return resumeState.exStates;
     return exercises.map(ex => {
       let sets;
+      let note = '';
       const latest = getLatestSession(ex);
       const lastSets = latest && latest.sets.length > 0 ? latest.sets : null;
       if (editSession) {
@@ -639,6 +639,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
         } else {
           sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
         }
+        if (editEx && editEx.note) note = editEx.note;
       } else {
         if (lastSets) {
           sets = lastSets.map(s => ({ id: uuid(), weight: s.weight, reps: 0, effort: 0 }));
@@ -646,7 +647,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
           sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
         }
       }
-      return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: !isEdit, lastSets };
+      return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: !isEdit, lastSets, note };
     });
   }
   );
@@ -675,11 +676,11 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
   // Track initial state for edit mode change detection
   const initialSnapshot = useRef(null);
   if (initialSnapshot.current === null && isEdit) {
-    initialSnapshot.current = JSON.stringify({ date, note, sets: exStates.map(ex => ex.sets.map(s => ({ w: s.weight, r: s.reps, e: s.effort }))) });
+    initialSnapshot.current = JSON.stringify({ date, sets: exStates.map(ex => ({ n: ex.note, s: ex.sets.map(s => ({ w: s.weight, r: s.reps, e: s.effort })) })) });
   }
   const hasChanges = isEdit ? (() => {
     if (!initialSnapshot.current) return false;
-    const current = JSON.stringify({ date, note, sets: exStates.map(ex => ex.sets.map(s => ({ w: s.weight, r: s.reps, e: s.effort }))) });
+    const current = JSON.stringify({ date, sets: exStates.map(ex => ({ n: ex.note, s: ex.sets.map(s => ({ w: s.weight, r: s.reps, e: s.effort })) })) });
     return current !== initialSnapshot.current;
   })() : true;
 
@@ -712,6 +713,12 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
     }));
   };
 
+  const updateNote = (ei, text) => {
+    setExStates(prev => prev.map((ex, i) =>
+      i === ei ? { ...ex, note: text } : ex
+    ));
+  };
+
   const handleSave = () => {
     try {
       const hasAnyData = exStates.some(ex => ex.sets.some(s => s.weight > 0 || s.reps > 0));
@@ -719,7 +726,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
         toast('No sets logged — add some data first', 'error');
         return;
       }
-      onSave({ catId, date, note, exercises: exStates });
+      onSave({ catId, date, exercises: exStates });
       toast('Workout saved');
     } catch (e) {
       toast('Failed to save workout', 'error');
@@ -728,7 +735,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
 
   const handleMinimize = () => {
     if (onMinimize) {
-      onMinimize({ catId, date, note, exStates, startTime });
+      onMinimize({ catId, date, exStates, startTime });
     }
   };
 
@@ -784,9 +791,16 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
           padding:'calc(var(--safe-top) + 12px) 16px 12px', borderBottom:'1px solid var(--card-border)', flexShrink:0,
           background:'var(--bg)'
         }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'6px', minWidth:'36px' }}>
-            {!isEdit && (
-              <>
+          {isEdit ? (
+            <button onClick={() => hasChanges ? setShowCancelConfirm(true) : onClose()} style={{
+              display:'flex', alignItems:'center', gap:'4px', padding:'6px 0',
+              fontSize:'15px', fontWeight:500,
+              color: hasChanges ? 'var(--red)' : 'var(--blue)'
+            }}>
+              <Icon name="chevron-left" size={16} /> Back
+            </button>
+          ) : (
+            <div style={{ display:'flex', alignItems:'center', gap:'6px', minWidth:'36px' }}>
               <div style={{ position:'relative', width:'12px', height:'12px', flexShrink:0 }}>
                 <div style={{
                   position:'absolute', inset:0, borderRadius:'50%',
@@ -799,68 +813,66 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                 }} />
               </div>
               <span style={{ fontSize:'13px', fontWeight:600, color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{elapsed}</span>
-              </>
-            )}
-          </div>
+            </div>
+          )}
           <h2 style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Edit' : cat.name} Workout</h2>
-          <div style={{ position:'relative' }}>
-            <button onClick={() => setShowWorkoutMenu(!showWorkoutMenu)} style={{ padding:'6px', color:'var(--text2)' }}>
-              <Icon name="ellipsis-vertical" size={22} />
-            </button>
-            {showWorkoutMenu && (
-              <>
-                <div onClick={() => setShowWorkoutMenu(false)} style={{ position:'fixed', inset:0, zIndex:150 }} />
-                <div style={{
-                  position:'absolute', right:0, top:'100%', marginTop:'4px', zIndex:151,
-                  background:'var(--card)', border:'1px solid var(--card-border)', borderRadius:'var(--radius)',
-                  boxShadow:'var(--shadow-lg)', minWidth:'180px', overflow:'hidden'
-                }}>
-                  {isEdit && !hasChanges ? (
-                    <button onClick={() => { setShowWorkoutMenu(false); onClose(); }} style={{
-                      width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
-                      display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
-                    }}>
-                      <Icon name="chevron-left" size={16} style={{ color:'var(--blue)' }} /> Done
-                    </button>
-                  ) : (
-                    <>
-                      {!isEdit && onMinimize && (
-                        <button onClick={() => { setShowWorkoutMenu(false); handleMinimize(); }} style={{
-                          width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
-                          display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                          borderBottom:'1px solid var(--card-border)'
-                        }}>
-                          <Icon name="minimize" size={16} style={{ color:'var(--blue)' }} /> Minimize
-                        </button>
-                      )}
-                      <button onClick={() => { setShowWorkoutMenu(false); handleSave(); }} style={{
+          {isEdit ? (
+            <div style={{ minWidth:'36px', display:'flex', justifyContent:'flex-end' }}>
+              {hasChanges && (
+                <button onClick={handleSave} style={{
+                  padding:'6px 12px', fontSize:'14px', fontWeight:600,
+                  background:'var(--green)', color:'#fff', border:'none',
+                  borderRadius:'var(--radius)', whiteSpace:'nowrap'
+                }}>Save</button>
+              )}
+            </div>
+          ) : (
+            <div style={{ position:'relative' }}>
+              <button onClick={() => setShowWorkoutMenu(!showWorkoutMenu)} style={{ padding:'6px', color:'var(--text2)' }}>
+                <Icon name="ellipsis-vertical" size={22} />
+              </button>
+              {showWorkoutMenu && (
+                <>
+                  <div onClick={() => setShowWorkoutMenu(false)} style={{ position:'fixed', inset:0, zIndex:150 }} />
+                  <div style={{
+                    position:'absolute', right:0, top:'100%', marginTop:'4px', zIndex:151,
+                    background:'var(--card)', border:'1px solid var(--card-border)', borderRadius:'var(--radius)',
+                    boxShadow:'var(--shadow-lg)', minWidth:'180px', overflow:'hidden'
+                  }}>
+                    {onMinimize && (
+                      <button onClick={() => { setShowWorkoutMenu(false); handleMinimize(); }} style={{
                         width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
                         display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
                         borderBottom:'1px solid var(--card-border)'
                       }}>
-                        <Icon name="circle-check" size={16} style={{ color:'var(--green)' }} /> {isEdit ? 'Save Changes' : 'Save Workout'}
+                        <Icon name="minimize" size={16} style={{ color:'var(--blue)' }} /> Minimize
                       </button>
-                      {!isEdit && (
-                        <button onClick={() => { setShowWorkoutMenu(false); handleCoachPrompt(); }} style={{
-                          width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
-                          display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                          borderBottom:'1px solid var(--card-border)'
-                        }}>
-                          <Icon name="sparkles" size={16} style={{ color:'var(--yellow)' }} /> Coach Prompt
-                        </button>
-                      )}
-                      <button onClick={() => { setShowWorkoutMenu(false); isEdit ? onClose() : setShowCancelConfirm(true); }} style={{
-                        width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--red)',
-                        display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
-                      }}>
-                        <Icon name="x" size={16} /> {isEdit ? 'Discard Changes' : 'Discard Workout'}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+                    )}
+                    <button onClick={() => { setShowWorkoutMenu(false); handleSave(); }} style={{
+                      width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
+                      display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
+                      borderBottom:'1px solid var(--card-border)'
+                    }}>
+                      <Icon name="circle-check" size={16} style={{ color:'var(--green)' }} /> Save Workout
+                    </button>
+                    <button onClick={() => { setShowWorkoutMenu(false); handleCoachPrompt(); }} style={{
+                      width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
+                      display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
+                      borderBottom:'1px solid var(--card-border)'
+                    }}>
+                      <Icon name="sparkles" size={16} style={{ color:'var(--yellow)' }} /> Coach Prompt
+                    </button>
+                    <button onClick={() => { setShowWorkoutMenu(false); setShowCancelConfirm(true); }} style={{
+                      width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--red)',
+                      display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
+                    }}>
+                      <Icon name="x" size={16} /> Discard Workout
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
         {!isEdit && <RestTimerBar />}
         <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', padding:'16px', paddingBottom:'var(--safe-bottom)' }}>
@@ -868,12 +880,6 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
           <div style={{ display:'flex', alignItems:'center', gap:'10px', paddingBottom:'8px' }}>
             <label style={{ fontSize:'15px', fontWeight:500, whiteSpace:'nowrap' }}>Date</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ flex:1 }} />
-          </div>
-
-          {/* Notes */}
-          <div style={{ marginBottom:'16px' }}>
-            <label style={{ display:'block', fontSize:'14px', color:'var(--text2)', marginBottom:'6px', fontWeight:500 }}>Notes</label>
-            <textarea placeholder="How was the workout?" value={note} onChange={e => setNote(e.target.value)} />
           </div>
 
           {/* Exercise sections */}
@@ -918,6 +924,22 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                     </span>
                   </div>
                 </button>
+                {!ex.collapsed && (
+                  <div style={{ marginTop:'8px' }} onClick={e => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      placeholder="Add a note"
+                      value={ex.note || ''}
+                      onChange={e => updateNote(ei, e.target.value)}
+                      style={{
+                        width:'100%', fontSize:'13px', padding:'6px 8px',
+                        background:'var(--bg)', border:'1px solid var(--input-border)',
+                        borderRadius:'6px', color:'var(--text2)',
+                        outline:'none', boxSizing:'border-box'
+                      }}
+                    />
+                  </div>
+                )}
                 {(() => {
                   const filled = ex.sets.filter(s => s.reps > 0).length;
                   const total = ex.sets.length;
@@ -970,8 +992,8 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
             boxShadow:'var(--shadow-lg)', overflow:'hidden'
           }}>
             <div style={{ padding:'20px 20px 16px', textAlign:'center' }}>
-              <div style={{ fontSize:'17px', fontWeight:600 }}>Discard Workout?</div>
-              <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'6px', lineHeight:'1.4' }}>Your workout data will be lost.</div>
+              <div style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Discard Changes?' : 'Discard Workout?'}</div>
+              <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'6px', lineHeight:'1.4' }}>{isEdit ? 'Your unsaved changes will be lost.' : 'Your workout data will be lost.'}</div>
             </div>
             <div style={{ display:'flex', gap:'8px', padding:'0 16px 16px' }}>
               <button onClick={() => setShowCancelConfirm(false)} style={{
@@ -1055,13 +1077,13 @@ function AddExerciseModal({ onSave, onClose }) {
       }}>
         <div style={{
           display:'flex', justifyContent:'space-between', alignItems:'center',
-          padding:'14px 16px', borderBottom:'1px solid var(--bg3)'
+          padding:'14px 16px', borderBottom:'1px solid var(--card-border)'
         }}>
           <button onClick={onClose} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Cancel</button>
           <h2 style={{ fontSize:'17px', fontWeight:600 }}>Add Exercise</h2>
           <button onClick={handleSave} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Save</button>
         </div>
-        <div style={{ padding:'16px' }}>
+        <div style={{ padding:'20px 16px' }}>
           <div>
             <label style={{ display:'block', fontSize:'14px', color:'var(--text2)', marginBottom:'6px', fontWeight:500 }}>Exercise Name</label>
             <input ref={inputRef} type="text" placeholder="e.g. Bench Press" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleSave(); }} />
@@ -1917,7 +1939,7 @@ function App() {
     setModal(null);
   };
 
-  const handleSaveWorkout = ({ catId, date, note, exercises: exStates }) => {
+  const handleSaveWorkout = ({ catId, date, exercises: exStates }) => {
     const newData = JSON.parse(JSON.stringify(data));
     let saved = false;
 
@@ -1932,7 +1954,7 @@ function App() {
       ex.sessions = ex.sessions.filter(s => s.date !== date);
       ex.sessions.push({
         date,
-        note,
+        note: wex.note || '',
         sets: wex.sets.map(s => ({ weight: s.weight, reps: s.reps, effort: s.effort }))
       });
       saved = true;
@@ -1972,12 +1994,10 @@ function App() {
   const handleEditSession = (catId, exId, dateStr) => {
     const allExercises = getActiveExercises(data, catId);
     const editExercises = [];
-    let note = '';
     allExercises.forEach(ex => {
       const session = (ex.sessions || []).find(s => s.date === dateStr);
       if (session) {
-        editExercises.push({ id: ex.id, sets: session.sets });
-        if (session.note && !note) note = session.note;
+        editExercises.push({ id: ex.id, sets: session.sets, note: session.note || '' });
       }
     });
     if (editExercises.length === 0) return;
@@ -1985,7 +2005,6 @@ function App() {
       catId,
       editSession: {
         date: dateStr,
-        note,
         exercises: editExercises
       }
     });
