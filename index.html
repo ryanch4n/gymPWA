@@ -174,6 +174,73 @@ function ToastProvider({ children }) {
 
 function useToast() { return useContext(ToastContext); }
 
+// ==================== SWIPE BACK HOOK ====================
+function useSwipeBack(onBack, { enabled = true, edgeZone = 30, threshold = 80 } = {}) {
+  const ref = useRef(null);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const swiping = useRef(false);
+  const offsetX = useRef(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const el = ref.current;
+    if (!el) return;
+
+    const onTouchStart = (e) => {
+      const touch = e.touches[0];
+      if (touch.clientX > edgeZone) return;
+      startX.current = touch.clientX;
+      startY.current = touch.clientY;
+      swiping.current = false;
+      offsetX.current = 0;
+      el.style.transition = 'none';
+    };
+
+    const onTouchMove = (e) => {
+      if (startX.current === 0) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - startX.current;
+      const dy = Math.abs(touch.clientY - startY.current);
+      if (!swiping.current) {
+        if (dy > 15) { startX.current = 0; return; }
+        if (dx > 10) swiping.current = true;
+        else return;
+      }
+      offsetX.current = Math.max(0, dx);
+      el.style.transform = `translateX(${offsetX.current}px)`;
+      el.style.opacity = String(1 - offsetX.current / (window.innerWidth * 1.5));
+    };
+
+    const onTouchEnd = () => {
+      if (startX.current === 0 && !swiping.current) return;
+      el.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+      if (offsetX.current > threshold) {
+        el.style.transform = `translateX(100%)`;
+        el.style.opacity = '0';
+        setTimeout(() => onBack(), 200);
+      } else {
+        el.style.transform = 'translateX(0)';
+        el.style.opacity = '1';
+      }
+      startX.current = 0;
+      swiping.current = false;
+      offsetX.current = 0;
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: true });
+    el.addEventListener('touchend', onTouchEnd);
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [enabled, onBack, edgeZone, threshold]);
+
+  return ref;
+}
+
 // ==================== HELPERS ====================
 function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -785,8 +852,13 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
     setCoachPrompt(lines.join('\n'));
   };
 
+  const swipeRef = useSwipeBack(
+    () => { if (isEdit) { hasChanges ? setShowCancelConfirm(true) : onClose(); } },
+    { enabled: isEdit }
+  );
+
   return (
-    <div className="slide-in" style={{
+    <div ref={swipeRef} className="slide-in" style={{
       position:'fixed', inset:0, background:'var(--bg)', zIndex:100,
       display:'flex', flexDirection:'column'
     }}>
@@ -2072,6 +2144,8 @@ function App() {
     }
   };
 
+  const swipeBackRef = useSwipeBack(goBack, { enabled: viewStack.length > 1 });
+
   if (!data) return null;
 
   let headerTitle = '';
@@ -2194,7 +2268,7 @@ function App() {
       </div>
 
       {/* Content */}
-      <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', paddingBottom:'20px', background:'var(--bg)' }}>
+      <div ref={swipeBackRef} style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', paddingBottom:'20px', background:'var(--bg)' }}>
         {currentView.view === 'category' && (
           <CategoryView
             catId={currentTab}
