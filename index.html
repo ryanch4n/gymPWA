@@ -356,6 +356,8 @@ function EmptyState({ iconName, title, subtitle }) {
 
 // --- Stepper ---
 function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
   return (
     <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
       <button onClick={() => onStep(-1)} style={{
@@ -367,8 +369,10 @@ function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
       <input
         type="number"
         inputMode={inputMode}
-        value={value}
-        onChange={e => onChange(parseFloat(e.target.value) || 0)}
+        value={editing ? draft : value}
+        onFocus={e => { setEditing(true); setDraft(value === 0 ? '' : String(value)); e.target.select(); }}
+        onChange={e => { setDraft(e.target.value); onChange(parseFloat(e.target.value) || 0); }}
+        onBlur={() => setEditing(false)}
         style={{
           flex:1, minWidth:0, height:'38px', borderRadius:'var(--radius)', textAlign:'center',
           fontWeight:600, fontSize:'15px'
@@ -653,6 +657,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
   );
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showWorkoutMenu, setShowWorkoutMenu] = useState(false);
+  const [pendingDeleteSet, setPendingDeleteSet] = useState(null);
   const [coachPrompt, setCoachPrompt] = useState(null);
   const toast = useToast();
 
@@ -795,7 +800,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
             <button onClick={() => hasChanges ? setShowCancelConfirm(true) : onClose()} style={{
               display:'flex', alignItems:'center', gap:'4px', padding:'6px 0',
               fontSize:'15px', fontWeight:500,
-              color: hasChanges ? 'var(--red)' : 'var(--blue)'
+              color: 'var(--blue)'
             }}>
               <Icon name="chevron-left" size={16} /> Back
             </button>
@@ -910,11 +915,34 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                       <div style={{ fontSize:'12px', color:'var(--text3)' }}>{ex.repRange}</div>
                     )}
                   </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
                     {ex.sets.length > 0 && ex.sets.every(s => s.reps > 0) && (
                       <span style={{ color:'var(--green)', display:'flex' }}><Icon name="circle-check" size={16} /></span>
                     )}
-                    <span style={{ fontSize:'14px', color: ex.sets.length > 0 && ex.sets.every(s => s.reps > 0) ? 'var(--green)' : 'var(--text2)' }}>{ex.sets.filter(s => s.reps > 0).length}/{ex.sets.length}</span>
+                    <button onClick={e => {
+                      e.stopPropagation();
+                      if (ex.sets.length <= 1) return;
+                      const lastSet = ex.sets[ex.sets.length - 1];
+                      const hasData = lastSet.weight > 0 || lastSet.reps > 0;
+                      if (hasData) {
+                        setPendingDeleteSet({ ei, si: ex.sets.length - 1, label: `Set ${ex.sets.length} (${lastSet.weight}×${lastSet.reps})` });
+                      } else {
+                        deleteSet(ei, ex.sets.length - 1);
+                      }
+                    }} style={{
+                      width:'24px', height:'24px', display:'flex', alignItems:'center', justifyContent:'center',
+                      borderRadius:'50%', border:'1px solid var(--input-border)',
+                      background:'transparent',
+                      color:'var(--text3)',
+                      fontSize:'14px', fontWeight:600, padding:0,
+                      opacity: ex.sets.length <= 1 ? 0.3 : 1
+                    }}>−</button>
+                    <span style={{ fontSize:'14px', fontVariantNumeric:'tabular-nums', minWidth:'28px', textAlign:'center', color: ex.sets.length > 0 && ex.sets.every(s => s.reps > 0) ? 'var(--green)' : 'var(--text2)' }}>{ex.sets.filter(s => s.reps > 0).length}/{ex.sets.length}</span>
+                    <button onClick={e => { e.stopPropagation(); addSet(ei); }} style={{
+                      width:'24px', height:'24px', display:'flex', alignItems:'center', justifyContent:'center',
+                      borderRadius:'50%', border:'1px solid var(--input-border)', background:'transparent',
+                      color:'var(--text3)', fontSize:'14px', fontWeight:600, padding:0
+                    }}>+</button>
                     <span style={{
                       color:'var(--text3)', transition:'transform 0.2s',
                       transform: ex.collapsed ? 'rotate(-90deg)' : 'none',
@@ -981,6 +1009,33 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
           ))}
           <div style={{ height:'40px' }} />
         </div>
+      {pendingDeleteSet && (
+        <div className="fade-in" onClick={() => setPendingDeleteSet(null)} style={{
+          position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px'
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width:'100%', maxWidth:'320px', background:'var(--card)',
+            borderRadius:'12px', border:'1px solid var(--card-border)',
+            boxShadow:'var(--shadow-lg)', overflow:'hidden'
+          }}>
+            <div style={{ padding:'20px 20px 16px', textAlign:'center' }}>
+              <div style={{ fontSize:'17px', fontWeight:600 }}>Delete Set?</div>
+              <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'6px', lineHeight:'1.4' }}>{pendingDeleteSet.label} has data that will be lost.</div>
+            </div>
+            <div style={{ display:'flex', gap:'8px', padding:'0 16px 16px' }}>
+              <button onClick={() => setPendingDeleteSet(null)} style={{
+                flex:1, padding:'10px', fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)',
+                border:'1px solid var(--input-border)', background:'var(--card)', color:'var(--text)'
+              }}>Cancel</button>
+              <button onClick={() => { deleteSet(pendingDeleteSet.ei, pendingDeleteSet.si); setPendingDeleteSet(null); }} style={{
+                flex:1, padding:'10px', fontSize:'14px', fontWeight:600, borderRadius:'var(--radius)',
+                background:'var(--red)', color:'#fff', border:'none'
+              }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
       {showCancelConfirm && (
         <div className="fade-in" onClick={() => setShowCancelConfirm(false)} style={{
           position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
