@@ -554,7 +554,10 @@ function RestTimerBar() {
   const [running, setRunning] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [total, setTotal] = useState(0);
+  const endTimeRef = useRef(null);
+  const totalRef = useRef(0);
   const intervalRef = useRef(null);
+  const firedRef = useRef(new Set());
 
   // Request notification permission on first interaction
   const requestNotifPermission = () => {
@@ -587,42 +590,66 @@ function RestTimerBar() {
     }
   };
 
+  const onFinish = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      osc.frequency.value = 880;
+      osc.connect(ctx.destination);
+      osc.start();
+      setTimeout(() => { osc.stop(); ctx.close(); }, 300);
+    } catch(e) {}
+    sendNotification();
+  }, []);
+
+  const tick = useCallback(() => {
+    if (!endTimeRef.current) return;
+    const rem = Math.round((endTimeRef.current - Date.now()) / 1000);
+    if (rem > 0) {
+      setRemaining(rem);
+      // Haptic at 10, 5, 3 — only fire once per threshold
+      [10, 5, 3].forEach(t => {
+        if (rem === t && !firedRef.current.has(t)) {
+          firedRef.current.add(t);
+          if (navigator.vibrate) navigator.vibrate(200);
+        }
+      });
+    } else {
+      setRemaining(0);
+      setRunning(false);
+      endTimeRef.current = null;
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+      onFinish();
+    }
+  }, [onFinish]);
+
+  // Also tick on visibility change (returning from background)
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible' && endTimeRef.current) tick(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [tick]);
+
   useEffect(() => {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
   const startRest = (duration) => {
     requestNotifPermission();
+    endTimeRef.current = Date.now() + duration * 1000;
+    totalRef.current = duration;
+    firedRef.current = new Set();
     setRemaining(duration);
     setTotal(duration);
     setRunning(true);
     if (intervalRef.current) clearInterval(intervalRef.current);
-    let rem = duration;
-    intervalRef.current = setInterval(() => {
-      rem--;
-      if (rem > 0) {
-        setRemaining(rem);
-        if ([10,5,3].includes(rem) && navigator.vibrate) navigator.vibrate(200);
-      } else {
-        setRemaining(0);
-        if (navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const osc = ctx.createOscillator();
-          osc.frequency.value = 880;
-          osc.connect(ctx.destination);
-          osc.start();
-          setTimeout(() => { osc.stop(); ctx.close(); }, 300);
-        } catch(e) {}
-        sendNotification();
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-        setRunning(false);
-      }
-    }, 1000);
+    intervalRef.current = setInterval(tick, 250);
   };
 
   const addTime = () => {
+    if (endTimeRef.current) endTimeRef.current += 30000;
+    totalRef.current += 30;
     setRemaining(r => r + 30);
     setTotal(t => t + 30);
   };
@@ -630,6 +657,7 @@ function RestTimerBar() {
   const stop = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = null;
+    endTimeRef.current = null;
     setRunning(false);
     setRemaining(0);
     setTotal(0);
