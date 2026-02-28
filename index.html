@@ -61,6 +61,7 @@ select:focus { border-color:var(--blue); box-shadow:0 0 0 2px var(--ring); }
 @keyframes slideOutDown { from { transform:translateY(0); } to { transform:translateY(100%); } }
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+@keyframes pulse-ring { 0% { transform:scale(1); opacity:0.6; } 100% { transform:scale(2.2); opacity:0; } }
 
 .slide-in { animation: slideInRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
 .slide-out { animation: slideOutRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
@@ -654,6 +655,34 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
   const [coachPrompt, setCoachPrompt] = useState(null);
   const toast = useToast();
 
+  // Workout duration timer (epoch-based so it survives minimize/sleep)
+  const [startTime] = useState(() => resumeState?.startTime || (isEdit ? null : Date.now()));
+  const [elapsed, setElapsed] = useState('0:00');
+  useEffect(() => {
+    if (!startTime) return;
+    const tick = () => {
+      const secs = Math.floor((Date.now() - startTime) / 1000);
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      const s = secs % 60;
+      setElapsed(h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [startTime]);
+
+  // Track initial state for edit mode change detection
+  const initialSnapshot = useRef(null);
+  if (initialSnapshot.current === null && isEdit) {
+    initialSnapshot.current = JSON.stringify({ date, note, sets: exStates.map(ex => ex.sets.map(s => ({ w: s.weight, r: s.reps, e: s.effort }))) });
+  }
+  const hasChanges = isEdit ? (() => {
+    if (!initialSnapshot.current) return false;
+    const current = JSON.stringify({ date, note, sets: exStates.map(ex => ex.sets.map(s => ({ w: s.weight, r: s.reps, e: s.effort }))) });
+    return current !== initialSnapshot.current;
+  })() : true;
+
   const toggleCollapse = (ei) => {
     setExStates(prev => prev.map((ex, i) =>
       i === ei ? { ...ex, collapsed: !ex.collapsed } : ex
@@ -699,7 +728,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
 
   const handleMinimize = () => {
     if (onMinimize) {
-      onMinimize({ catId, date, note, exStates });
+      onMinimize({ catId, date, note, exStates, startTime });
     }
   };
 
@@ -755,7 +784,24 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
           padding:'calc(var(--safe-top) + 12px) 16px 12px', borderBottom:'1px solid var(--card-border)', flexShrink:0,
           background:'var(--bg)'
         }}>
-          <div style={{ width:'36px' }} />
+          <div style={{ display:'flex', alignItems:'center', gap:'6px', minWidth:'36px' }}>
+            {!isEdit && (
+              <>
+              <div style={{ position:'relative', width:'12px', height:'12px', flexShrink:0 }}>
+                <div style={{
+                  position:'absolute', inset:0, borderRadius:'50%',
+                  background:'var(--green)',
+                  animation:'pulse-ring 1.5s ease-out infinite'
+                }} />
+                <div style={{
+                  position:'absolute', inset:'2px', borderRadius:'50%',
+                  background:'var(--green)', boxShadow:'0 0 6px var(--green)'
+                }} />
+              </div>
+              <span style={{ fontSize:'13px', fontWeight:600, color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{elapsed}</span>
+              </>
+            )}
+          </div>
           <h2 style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Edit' : cat.name} Workout</h2>
           <div style={{ position:'relative' }}>
             <button onClick={() => setShowWorkoutMenu(!showWorkoutMenu)} style={{ padding:'6px', color:'var(--text2)' }}>
@@ -769,35 +815,48 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                   background:'var(--card)', border:'1px solid var(--card-border)', borderRadius:'var(--radius)',
                   boxShadow:'var(--shadow-lg)', minWidth:'180px', overflow:'hidden'
                 }}>
-                  <button onClick={() => { setShowWorkoutMenu(false); handleSave(); }} style={{
-                    width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
-                    display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                    borderBottom:'1px solid var(--card-border)'
-                  }}>
-                    <Icon name="circle-check" size={16} style={{ color:'var(--green)' }} /> Save Workout
-                  </button>
-                  {!isEdit && onMinimize && (
-                    <button onClick={() => { setShowWorkoutMenu(false); handleMinimize(); }} style={{
+                  {isEdit && !hasChanges ? (
+                    <button onClick={() => { setShowWorkoutMenu(false); onClose(); }} style={{
                       width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
-                      display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                      borderBottom:'1px solid var(--card-border)'
+                      display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
                     }}>
-                      <Icon name="minimize" size={16} style={{ color:'var(--blue)' }} /> Minimize
+                      <Icon name="chevron-left" size={16} style={{ color:'var(--blue)' }} /> Done
                     </button>
+                  ) : (
+                    <>
+                      {!isEdit && onMinimize && (
+                        <button onClick={() => { setShowWorkoutMenu(false); handleMinimize(); }} style={{
+                          width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
+                          display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
+                          borderBottom:'1px solid var(--card-border)'
+                        }}>
+                          <Icon name="minimize" size={16} style={{ color:'var(--blue)' }} /> Minimize
+                        </button>
+                      )}
+                      <button onClick={() => { setShowWorkoutMenu(false); handleSave(); }} style={{
+                        width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
+                        display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
+                        borderBottom:'1px solid var(--card-border)'
+                      }}>
+                        <Icon name="circle-check" size={16} style={{ color:'var(--green)' }} /> {isEdit ? 'Save Changes' : 'Save Workout'}
+                      </button>
+                      {!isEdit && (
+                        <button onClick={() => { setShowWorkoutMenu(false); handleCoachPrompt(); }} style={{
+                          width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
+                          display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
+                          borderBottom:'1px solid var(--card-border)'
+                        }}>
+                          <Icon name="sparkles" size={16} style={{ color:'var(--yellow)' }} /> Coach Prompt
+                        </button>
+                      )}
+                      <button onClick={() => { setShowWorkoutMenu(false); isEdit ? onClose() : setShowCancelConfirm(true); }} style={{
+                        width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--red)',
+                        display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
+                      }}>
+                        <Icon name="x" size={16} /> {isEdit ? 'Discard Changes' : 'Discard Workout'}
+                      </button>
+                    </>
                   )}
-                  <button onClick={() => { setShowWorkoutMenu(false); handleCoachPrompt(); }} style={{
-                    width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
-                    display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                    borderBottom:'1px solid var(--card-border)'
-                  }}>
-                    <Icon name="sparkles" size={16} style={{ color:'var(--yellow)' }} /> Coach Prompt
-                  </button>
-                  <button onClick={() => { setShowWorkoutMenu(false); setShowCancelConfirm(true); }} style={{
-                    width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--red)',
-                    display:'flex', alignItems:'center', gap:'10px', textAlign:'left'
-                  }}>
-                    <Icon name="x" size={16} /> Discard Workout
-                  </button>
                 </div>
               </>
             )}
@@ -1124,10 +1183,12 @@ function CategoryView({ catId, data, onNavigateDetail }) {
 }
 
 // --- Exercise Detail View ---
-function ProgressChart({ sessions }) {
+function CombinedChart({ sessions }) {
   const [mode, setMode] = useState('avg');
   const [selectedIdx, setSelectedIdx] = useState(null);
+  const [selectedBarIdx, setSelectedBarIdx] = useState(null);
   const [dateRange, setDateRange] = useState('all');
+  const [showInfo, setShowInfo] = useState(false);
 
   const RANGES = [
     { key: '1m', label: '1M', months: 1 },
@@ -1137,7 +1198,6 @@ function ProgressChart({ sessions }) {
     { key: 'all', label: 'All', months: 0 }
   ];
 
-  // Sort chronologically for the chart
   const allSorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
   if (allSorted.length < 2) return null;
 
@@ -1153,16 +1213,15 @@ function ProgressChart({ sessions }) {
 
   if (sorted.length < 2) return null;
 
+  // --- Line chart data ---
   const points = sorted.map((s, i) => {
     const weights = (s.sets || []).map(set => set.weight).filter(w => w > 0);
-    const sessionAvg = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 0;
-    // Rolling avg over last 3 sessions (including current)
     const windowStart = Math.max(0, i - 2);
-    const window = sorted.slice(windowStart, i + 1);
-    const rollingAvg = window.reduce((sum, ws) => {
+    const windowSlice = sorted.slice(windowStart, i + 1);
+    const rollingAvg = windowSlice.reduce((sum, ws) => {
       const ww = (ws.sets || []).map(set => set.weight).filter(w => w > 0);
       return sum + (ww.length > 0 ? ww.reduce((a, b) => a + b, 0) / ww.length : 0);
-    }, 0) / window.length;
+    }, 0) / windowSlice.length;
     return {
       date: s.date,
       weight: Math.max(...(s.sets || []).map(set => set.weight)),
@@ -1174,7 +1233,7 @@ function ProgressChart({ sessions }) {
   const values = points.map(p => mode === 'avg' ? p.avg : mode === 'weight' ? p.weight : p.volume);
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
-  const range = maxVal - minVal || 1;
+  const valRange = maxVal - minVal || 1;
 
   const W = 320;
   const H = 140;
@@ -1185,7 +1244,7 @@ function ProgressChart({ sessions }) {
   const chartH = H - padY * 2;
 
   const getX = (i) => padX + (i / (points.length - 1)) * chartW;
-  const getY = (v) => padY + chartH - ((v - minVal) / range) * chartH;
+  const getY = (v) => padY + chartH - ((v - minVal) / valRange) * chartH;
 
   const pathD = points.map((p, i) => {
     const v = mode === 'avg' ? p.avg : mode === 'weight' ? p.weight : p.volume;
@@ -1202,37 +1261,72 @@ function ProgressChart({ sessions }) {
 
   const formatVal = (v) => Math.round(v).toLocaleString();
 
+  // --- Progression bar chart data ---
+  const sessionVolAvgs = sorted.map(s => {
+    const sets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
+    return sets.length > 0 ? sets.reduce((sum, set) => sum + set.weight * set.reps, 0) / sets.length : 0;
+  });
+
+  const deltas = [];
+  for (let i = 1; i < sessionVolAvgs.length; i++) {
+    const currWindow = sessionVolAvgs.slice(Math.max(0, i - 2), i + 1);
+    const prevWindow = sessionVolAvgs.slice(Math.max(0, i - 3), i);
+    const currAvg = currWindow.reduce((s, v) => s + v, 0) / currWindow.length;
+    const prevAvg = prevWindow.reduce((s, v) => s + v, 0) / prevWindow.length;
+    const pctChange = prevAvg > 0 ? ((currAvg - prevAvg) / prevAvg) * 100 : 0;
+    deltas.push({ date: sorted[i].date, delta: Math.round(pctChange * 10) / 10 });
+  }
+
+  const hasProgression = deltas.length >= 2;
+  const maxAbs = hasProgression ? Math.max(...deltas.map(d => Math.abs(d.delta)), 1) : 1;
+  const H2 = 80;
+  const padY2 = 10;
+  const chartH2 = H2 - padY2 * 2;
+  const midY2 = padY2 + chartH2 / 2;
+  const barW = hasProgression ? Math.max(4, Math.min(16, (chartW / deltas.length) * 0.7)) : 0;
+  const barGap = hasProgression ? chartW / deltas.length : 0;
+
+  const handleDateChange = (key) => {
+    setDateRange(key);
+    setSelectedIdx(null);
+    setSelectedBarIdx(null);
+  };
+
+  // Compute date labels for x-axis (up to 5 evenly spaced)
+  const dateLabelCount = Math.min(5, sorted.length);
+  const dateLabels = [];
+  for (let i = 0; i < dateLabelCount; i++) {
+    const idx = Math.round(i * (sorted.length - 1) / (dateLabelCount - 1));
+    dateLabels.push({ idx, date: sorted[idx].date, x: getX(idx) });
+  }
+
+  const deltaDateLabels = [];
+  if (hasProgression) {
+    const dCount = Math.min(5, deltas.length);
+    for (let i = 0; i < dCount; i++) {
+      const idx = Math.round(i * (deltas.length - 1) / (dCount - 1));
+      const x = padX + idx * barGap + barGap / 2;
+      deltaDateLabels.push({ date: deltas[idx].date, x });
+    }
+  }
+
+  const subcardStyle = {
+    background:'var(--bg2)', borderRadius:'10px',
+    border:'1px solid var(--card-border)',
+    margin:'0 10px', padding:'10px 4px 8px'
+  };
+
   return (
     <div style={{
       margin:'12px 16px 8px', background:'var(--card)', borderRadius:'var(--radius)',
-      border:'1px solid var(--card-border)', overflow:'hidden', boxShadow:'var(--shadow)'
+      border:'1px solid var(--card-border)', overflow:'hidden', boxShadow:'var(--shadow)', position:'relative',
+      paddingBottom:'10px'
     }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 0' }}>
-        <div style={{ display:'flex', gap:'4px' }}>
-          {[{key:'avg',label:'Avg Weight'},{key:'weight',label:'Max Weight'},{key:'volume',label:'Volume'}].map(m => (
-            <button key={m.key} onClick={() => { setMode(m.key); setSelectedIdx(null); }} style={{
-              padding:'5px 12px', borderRadius:'6px', fontSize:'12px', fontWeight:600,
-              background: mode === m.key ? 'var(--blue)' : 'transparent',
-              color: mode === m.key ? '#fff' : 'var(--text3)',
-              border: mode === m.key ? 'none' : '1px solid var(--input-border)',
-              transition:'all 0.15s'
-            }}>{m.label}</button>
-          ))}
-        </div>
-        <div style={{ textAlign:'right' }}>
-          <span style={{
-            fontSize:'12px', fontWeight:600,
-            color: trendUp ? 'var(--green)' : 'var(--red)'
-          }}>
-            {trendUp ? '↑' : '↓'} {Math.abs(trendPct)}%
-          </span>
-        </div>
-      </div>
-
-      <div style={{ display:'flex', gap:'2px', padding:'10px 14px 0' }}>
+      {/* Shared date range picker — top level */}
+      <div style={{ display:'flex', gap:'4px', padding:'12px 14px 10px' }}>
         {RANGES.map(r => (
-          <button key={r.key} onClick={() => { setDateRange(r.key); setSelectedIdx(null); }} style={{
-            flex:1, padding:'4px 0', borderRadius:'5px', fontSize:'11px', fontWeight:600,
+          <button key={r.key} onClick={() => handleDateChange(r.key)} style={{
+            flex:1, padding:'5px 0', borderRadius:'5px', fontSize:'11px', fontWeight:600,
             background: dateRange === r.key ? 'var(--bg4)' : 'transparent',
             color: dateRange === r.key ? 'var(--text)' : 'var(--text3)',
             border: dateRange === r.key ? 'none' : '1px solid var(--input-border)', transition:'all 0.15s'
@@ -1240,170 +1334,144 @@ function ProgressChart({ sessions }) {
         ))}
       </div>
 
-      <div style={{ padding:'8px 14px 4px' }}>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', display:'block' }}>
-          <defs>
-            <linearGradient id={'grad-' + mode} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--blue)" stopOpacity="0.2"/>
-              <stop offset="100%" stopColor="var(--blue)" stopOpacity="0"/>
-            </linearGradient>
-          </defs>
-          {/* Grid lines + Y labels */}
-          {[0, 0.5, 1].map(pct => {
-            const y = padY + chartH - pct * chartH;
-            const val = minVal + pct * range;
-            return <React.Fragment key={pct}>
-              <line x1={padX} y1={y} x2={W - 4} y2={y} stroke="var(--card-border)" strokeWidth="0.5" />
-              <text x={padX - 4} y={y + 3.5} textAnchor="end" fontSize="9" fill="var(--text3)">{formatVal(val)}</text>
-            </React.Fragment>;
-          })}
-          {/* Area fill */}
-          <path d={areaD} fill={`url(#grad-${mode})`} />
-          {/* Line */}
-          <path d={pathD} fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          {/* Dots + tooltip */}
-          {points.map((p, i) => {
-            const v = mode === 'avg' ? p.avg : mode === 'weight' ? p.weight : p.volume;
-            const cx = getX(i);
-            const cy = getY(v);
-            const isSelected = selectedIdx === i;
-            return <React.Fragment key={i}>
-              {isSelected && (
-                <>
-                  <line x1={cx} y1={padY} x2={cx} y2={padY + chartH} stroke="var(--blue)" strokeWidth="0.5" strokeDasharray="3,2" />
-                  {(() => {
-                    const label = formatVal(v) + (mode !== 'volume' ? 'lbs' : '') + '  ' + p.date.slice(5).replace('-','/');
-                    const labelW = label.length * 5.2 + 12;
-                    let tx = cx - labelW / 2;
-                    if (tx < 2) tx = 2;
-                    if (tx + labelW > W - 2) tx = W - 2 - labelW;
-                    const ty = cy - 18;
-                    return <>
-                      <rect x={tx} y={ty} width={labelW} height={16} rx="4" fill="var(--bg4)" />
-                      <text x={tx + labelW / 2} y={ty + 11.5} textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--text)">{label}</text>
-                    </>;
-                  })()}
-                </>
-              )}
-              <circle cx={cx} cy={cy} r={isSelected ? 5 : 3} fill="var(--blue)" />
-              <circle cx={cx} cy={cy} r="14" fill="transparent" onClick={() => setSelectedIdx(isSelected ? null : i)} />
-            </React.Fragment>;
-          })}
-        </svg>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'10px', color:'var(--text3)', marginTop:'4px' }}>
-          <span>{sorted[0].date.slice(5).replace('-','/')}</span>
-          <span>{sorted[sorted.length - 1].date.slice(5).replace('-','/')}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProgressionChart({ sessions }) {
-  const [showInfo, setShowInfo] = useState(false);
-  const [selectedIdx, setSelectedIdx] = useState(null);
-  const allSorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date));
-  if (allSorted.length < 3) return null;
-
-  // Compute average volume per set (weight × reps) per session
-  const sessionAvgs = allSorted.map(s => {
-    const sets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
-    const avgVol = sets.length > 0 ? sets.reduce((sum, set) => sum + set.weight * set.reps, 0) / sets.length : 0;
-    return { date: s.date, avg: avgVol };
-  });
-
-  // Compute rolling 3-session average, then % change between consecutive rolling averages
-  const deltas = [];
-  for (let i = 1; i < sessionAvgs.length; i++) {
-    const currWindow = sessionAvgs.slice(Math.max(0, i - 2), i + 1);
-    const prevWindow = sessionAvgs.slice(Math.max(0, i - 3), i);
-    const currAvg = currWindow.reduce((s, p) => s + p.avg, 0) / currWindow.length;
-    const prevAvg = prevWindow.reduce((s, p) => s + p.avg, 0) / prevWindow.length;
-    const pctChange = prevAvg > 0 ? ((currAvg - prevAvg) / prevAvg) * 100 : 0;
-    deltas.push({ date: sessionAvgs[i].date, delta: Math.round(pctChange * 10) / 10 });
-  }
-
-  if (deltas.length < 2) return null;
-
-  const maxAbs = Math.max(...deltas.map(d => Math.abs(d.delta)), 1);
-
-  const W = 320;
-  const H = 100;
-  const padX = 30;
-  const padY = 12;
-  const chartW = W - padX - 4;
-  const chartH = H - padY * 2;
-  const midY = padY + chartH / 2;
-  const barW = Math.max(4, Math.min(16, (chartW / deltas.length) * 0.7));
-  const gap = chartW / deltas.length;
-
-  return (
-    <div style={{
-      margin:'8px 16px 8px', background:'var(--card)', borderRadius:'var(--radius)',
-      border:'1px solid var(--card-border)', overflow:'hidden', boxShadow:'var(--shadow)', position:'relative'
-    }}>
-      <div style={{ padding:'12px 14px 0', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-          <span style={{ fontSize:'12px', fontWeight:600, color:'var(--text2)' }}>Progression</span>
-          <button onClick={() => setShowInfo(!showInfo)} style={{
-            width:'16px', height:'16px', borderRadius:'50%', fontSize:'10px', fontWeight:700,
-            background:'var(--bg3)', color:'var(--text3)', display:'flex', alignItems:'center', justifyContent:'center',
-            lineHeight:1
-          }}>?</button>
-        </div>
-        {selectedIdx !== null && deltas[selectedIdx] && (
-          <span style={{
-            fontSize:'12px', fontWeight:600,
-            color: deltas[selectedIdx].delta >= 0 ? 'var(--green)' : 'var(--red)'
-          }}>
-            {deltas[selectedIdx].delta >= 0 ? '+' : ''}{deltas[selectedIdx].delta.toFixed(1)}%  {deltas[selectedIdx].date.slice(5).replace('-','/')}
-          </span>
-        )}
-      </div>
-      {showInfo && (
-        <>
-          <div onClick={() => setShowInfo(false)} style={{ position:'fixed', inset:0, zIndex:50 }} />
-          <div style={{
-            position:'absolute', top:'40px', left:'14px', right:'14px', zIndex:51,
-            background:'var(--bg3)', borderRadius:'10px', padding:'12px', fontSize:'13px',
-            color:'var(--text2)', lineHeight:'1.5', boxShadow:'0 4px 20px rgba(0,0,0,0.5)',
-            border:'1px solid var(--bg4)'
-          }}>
-            Tracks your session-over-session momentum using <strong style={{ color:'var(--text)' }}>volume per set</strong> (weight × reps).
-            Each bar shows the % change in your 3-session rolling average.
-            <span style={{ color:'var(--green)' }}> Green</span> = improving,
-            <span style={{ color:'var(--red)' }}> red</span> = declining.
-            Consistent green bars mean steady progress.
+      {/* Line chart subcard */}
+      <div style={subcardStyle}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 10px 6px' }}>
+          <div style={{ display:'flex', gap:'4px' }}>
+            {[{key:'avg',label:'Avg Weight'},{key:'weight',label:'Max Weight'},{key:'volume',label:'Volume'}].map(m => (
+              <button key={m.key} onClick={() => { setMode(m.key); setSelectedIdx(null); }} style={{
+                padding:'4px 10px', borderRadius:'6px', fontSize:'11px', fontWeight:600,
+                background: mode === m.key ? 'var(--blue)' : 'transparent',
+                color: mode === m.key ? '#fff' : 'var(--text3)',
+                border: mode === m.key ? 'none' : '1px solid var(--input-border)',
+                transition:'all 0.15s'
+              }}>{m.label}</button>
+            ))}
           </div>
-        </>
-      )}
-      <div style={{ padding:'8px 14px 4px' }}>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', display:'block' }}>
-          {/* Zero line */}
-          <line x1={padX} y1={midY} x2={W - 4} y2={midY} stroke="var(--card-border)" strokeWidth="0.5" />
-          {/* +/- labels */}
-          <text x={padX - 4} y={padY + 4} textAnchor="end" fontSize="8" fill="var(--text3)">+{Math.round(maxAbs)}%</text>
-          <text x={padX - 4} y={midY + 3} textAnchor="end" fontSize="8" fill="var(--text3)">0</text>
-          <text x={padX - 4} y={padY + chartH + 1} textAnchor="end" fontSize="8" fill="var(--text3)">-{Math.round(maxAbs)}%</text>
-          {/* Bars */}
-          {deltas.map((d, i) => {
-            const x = padX + i * gap + (gap - barW) / 2;
-            const barH = (Math.abs(d.delta) / maxAbs) * (chartH / 2);
-            const y = d.delta >= 0 ? midY - barH : midY;
-            const color = d.delta >= 0 ? 'var(--green)' : 'var(--red)';
-            const isSelected = selectedIdx === i;
-            return <React.Fragment key={i}>
-              <rect x={x} y={y} width={barW} height={Math.max(barH, 0.5)} rx="2" fill={color} opacity={isSelected ? 1 : 0.7} />
-              {isSelected && <line x1={x + barW / 2} y1={padY} x2={x + barW / 2} y2={padY + chartH} stroke={color} strokeWidth="0.5" strokeDasharray="3,2" />}
-              <rect x={x - gap * 0.15} y={padY} width={barW + gap * 0.3} height={chartH} fill="transparent" onClick={() => setSelectedIdx(isSelected ? null : i)} />
-            </React.Fragment>;
-          })}
-        </svg>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'10px', color:'var(--text3)', marginTop:'4px' }}>
-          <span>{deltas[0].date.slice(5).replace('-','/')}</span>
-          <span>{deltas[deltas.length - 1].date.slice(5).replace('-','/')}</span>
+          <span style={{ fontSize:'11px', fontWeight:600, color: trendUp ? 'var(--green)' : 'var(--red)' }}>
+            {trendUp ? '↑' : '↓'} {Math.abs(trendPct)}%
+          </span>
+        </div>
+        <div style={{ padding:'0 6px' }}>
+          <svg viewBox={`0 0 ${W} ${H + 14}`} style={{ width:'100%', height:'auto', display:'block' }}>
+            <defs>
+              <linearGradient id={'grad-' + mode} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--blue)" stopOpacity="0.2"/>
+                <stop offset="100%" stopColor="var(--blue)" stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            {[0, 0.5, 1].map(pct => {
+              const y = padY + chartH - pct * chartH;
+              const val = minVal + pct * valRange;
+              return <React.Fragment key={pct}>
+                <line x1={padX} y1={y} x2={W - 4} y2={y} stroke="var(--card-border)" strokeWidth="0.5" />
+                <text x={padX - 4} y={y + 3.5} textAnchor="end" fontSize="9" fill="var(--text3)">{formatVal(val)}</text>
+              </React.Fragment>;
+            })}
+            <path d={areaD} fill={`url(#grad-${mode})`} />
+            <path d={pathD} fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            {points.map((p, i) => {
+              const v = mode === 'avg' ? p.avg : mode === 'weight' ? p.weight : p.volume;
+              const cx = getX(i);
+              const cy = getY(v);
+              const isSelected = selectedIdx === i;
+              return <React.Fragment key={i}>
+                {isSelected && (
+                  <>
+                    <line x1={cx} y1={padY} x2={cx} y2={padY + chartH} stroke="var(--blue)" strokeWidth="0.5" strokeDasharray="3,2" />
+                    {(() => {
+                      const label = formatVal(v) + (mode !== 'volume' ? 'lbs' : '') + '  ' + p.date.slice(5).replace('-','/');
+                      const labelW = label.length * 5.2 + 12;
+                      let tx = cx - labelW / 2;
+                      if (tx < 2) tx = 2;
+                      if (tx + labelW > W - 2) tx = W - 2 - labelW;
+                      const ty = cy - 18;
+                      return <>
+                        <rect x={tx} y={ty} width={labelW} height={16} rx="4" fill="var(--bg4)" />
+                        <text x={tx + labelW / 2} y={ty + 11.5} textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--text)">{label}</text>
+                      </>;
+                    })()}
+                  </>
+                )}
+                <circle cx={cx} cy={cy} r={isSelected ? 5 : 3} fill="var(--blue)" />
+                <circle cx={cx} cy={cy} r="14" fill="transparent" onClick={() => setSelectedIdx(isSelected ? null : i)} />
+              </React.Fragment>;
+            })}
+            {/* Date labels */}
+            {dateLabels.map((dl, i) => (
+              <text key={i} x={dl.x} y={H + 10} textAnchor="middle" fontSize="8" fill="var(--text3)">
+                {dl.date.slice(5).replace('-','/')}
+              </text>
+            ))}
+          </svg>
         </div>
       </div>
+
+      {/* Progression bar chart subcard */}
+      {hasProgression && (
+        <div style={{ ...subcardStyle, marginTop:'8px' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 10px 4px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+              <span style={{ fontSize:'11px', fontWeight:600, color:'var(--text3)' }}>Progression</span>
+              <button onClick={() => setShowInfo(!showInfo)} style={{
+                width:'14px', height:'14px', borderRadius:'50%', fontSize:'9px', fontWeight:700,
+                background:'var(--bg3)', color:'var(--text3)', display:'flex', alignItems:'center', justifyContent:'center',
+                lineHeight:1
+              }}>?</button>
+            </div>
+            {selectedBarIdx !== null && deltas[selectedBarIdx] && (
+              <span style={{
+                fontSize:'11px', fontWeight:600,
+                color: deltas[selectedBarIdx].delta >= 0 ? 'var(--green)' : 'var(--red)'
+              }}>
+                {deltas[selectedBarIdx].delta >= 0 ? '+' : ''}{deltas[selectedBarIdx].delta.toFixed(1)}%  {deltas[selectedBarIdx].date.slice(5).replace('-','/')}
+              </span>
+            )}
+          </div>
+          {showInfo && (
+            <>
+              <div onClick={() => setShowInfo(false)} style={{ position:'fixed', inset:0, zIndex:50 }} />
+              <div style={{
+                position:'absolute', left:'14px', right:'14px', zIndex:51,
+                background:'var(--bg3)', borderRadius:'10px', padding:'12px', fontSize:'13px',
+                color:'var(--text2)', lineHeight:'1.5', boxShadow:'0 4px 20px rgba(0,0,0,0.5)',
+                border:'1px solid var(--bg4)'
+              }}>
+                Tracks your session-over-session momentum using <strong style={{ color:'var(--text)' }}>volume per set</strong> (weight × reps).
+                Each bar shows the % change in your 3-session rolling average.
+                <span style={{ color:'var(--green)' }}> Green</span> = improving,
+                <span style={{ color:'var(--red)' }}> red</span> = declining.
+              </div>
+            </>
+          )}
+          <div style={{ padding:'0 6px' }}>
+            <svg viewBox={`0 0 ${W} ${H2 + 14}`} style={{ width:'100%', height:'auto', display:'block' }}>
+              <line x1={padX} y1={midY2} x2={W - 4} y2={midY2} stroke="var(--card-border)" strokeWidth="0.5" />
+              <text x={padX - 4} y={padY2 + 4} textAnchor="end" fontSize="8" fill="var(--text3)">+{Math.round(maxAbs)}%</text>
+              <text x={padX - 4} y={midY2 + 3} textAnchor="end" fontSize="8" fill="var(--text3)">0</text>
+              <text x={padX - 4} y={padY2 + chartH2 + 1} textAnchor="end" fontSize="8" fill="var(--text3)">-{Math.round(maxAbs)}%</text>
+              {deltas.map((d, i) => {
+                const x = padX + i * barGap + (barGap - barW) / 2;
+                const bH = (Math.abs(d.delta) / maxAbs) * (chartH2 / 2);
+                const y = d.delta >= 0 ? midY2 - bH : midY2;
+                const color = d.delta >= 0 ? 'var(--green)' : 'var(--red)';
+                const isSel = selectedBarIdx === i;
+                return <React.Fragment key={i}>
+                  <rect x={x} y={y} width={barW} height={Math.max(bH, 0.5)} rx="2" fill={color} opacity={isSel ? 1 : 0.7} />
+                  {isSel && <line x1={x + barW / 2} y1={padY2} x2={x + barW / 2} y2={padY2 + chartH2} stroke={color} strokeWidth="0.5" strokeDasharray="3,2" />}
+                  <rect x={x - barGap * 0.15} y={padY2} width={barW + barGap * 0.3} height={chartH2} fill="transparent" onClick={() => setSelectedBarIdx(isSel ? null : i)} />
+                </React.Fragment>;
+              })}
+              {/* Date labels */}
+              {deltaDateLabels.map((dl, i) => (
+                <text key={i} x={dl.x} y={H2 + 10} textAnchor="middle" fontSize="8" fill="var(--text3)">
+                  {dl.date.slice(5).replace('-','/')}
+                </text>
+              ))}
+            </svg>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1435,8 +1503,7 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
 
   return (
     <div className="slide-in">
-      <ProgressChart sessions={sessions} />
-      <ProgressionChart sessions={sessions} />
+      <CombinedChart sessions={sessions} />
 
       {sessions.length > 0 && (
         <div style={{ display:'flex', gap:'8px', margin:'0 16px 8px' }}>
@@ -1549,6 +1616,7 @@ function SettingsView({ data, onDataChange }) {
   const [notifStatus, setNotifStatus] = useState(() =>
     'Notification' in window ? Notification.permission : 'unsupported'
   );
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const toast = useToast();
 
   const handleNotifToggle = async () => {
@@ -1650,27 +1718,6 @@ function SettingsView({ data, onDataChange }) {
         <h3 style={{
           fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
           letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
-        }}>Data Management</h3>
-        <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
-          <div style={{ padding:'13px 16px', borderBottom:'1px solid var(--bg3)' }}>
-            <button onClick={handleExport} style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', textAlign:'left' }}>
-              <Icon name="upload" size={18} />
-              <span style={{ fontSize:'16px' }}>Export JSON Backup</span>
-            </button>
-          </div>
-          <div style={{ padding:'13px 16px' }}>
-            <button onClick={handleImport} style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', textAlign:'left' }}>
-              <Icon name="download" size={18} />
-              <span style={{ fontSize:'16px' }}>Import JSON File</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ margin:'16px' }}>
-        <h3 style={{
-          fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
-          letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
         }}>Notifications</h3>
         <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
           <div style={{
@@ -1732,6 +1779,71 @@ function SettingsView({ data, onDataChange }) {
           </div>
         </div>
       </div>
+
+      <div style={{ margin:'16px' }}>
+        <h3 style={{
+          fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
+          letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
+        }}>Data Management</h3>
+        <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
+          <div style={{ padding:'13px 16px', borderBottom:'1px solid var(--bg3)' }}>
+            <button onClick={handleExport} style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', textAlign:'left' }}>
+              <Icon name="upload" size={18} />
+              <span style={{ fontSize:'16px' }}>Export JSON Backup</span>
+            </button>
+          </div>
+          <div style={{ padding:'13px 16px', borderBottom:'1px solid var(--bg3)' }}>
+            <button onClick={handleImport} style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', textAlign:'left' }}>
+              <Icon name="download" size={18} />
+              <span style={{ fontSize:'16px' }}>Import JSON File</span>
+            </button>
+          </div>
+          <div style={{ padding:'13px 16px' }}>
+            <button onClick={() => setShowResetConfirm(true)} style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', textAlign:'left', color:'var(--red)' }}>
+              <Icon name="trash-2" size={18} />
+              <span style={{ fontSize:'16px' }}>Reset All Data</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Reset confirmation dialog */}
+      {showResetConfirm && (
+        <>
+          <div onClick={() => setShowResetConfirm(false)} style={{
+            position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:200,
+            animation:'fadeIn 0.2s ease'
+          }} />
+          <div style={{
+            position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', zIndex:201,
+            background:'var(--card)', borderRadius:'14px', padding:'24px', width:'min(320px, 85vw)',
+            boxShadow:'var(--shadow-lg)', border:'1px solid var(--card-border)',
+            animation:'fadeIn 0.2s ease'
+          }}>
+            <div style={{ fontSize:'17px', fontWeight:700, marginBottom:'8px' }}>Reset All Data?</div>
+            <div style={{ fontSize:'14px', color:'var(--text2)', marginBottom:'20px', lineHeight:'1.5' }}>
+              This will permanently delete all your workout history, exercises, and settings. This action cannot be undone.
+            </div>
+            <div style={{ display:'flex', gap:'10px' }}>
+              <button onClick={() => setShowResetConfirm(false)} style={{
+                flex:1, padding:'11px', borderRadius:'var(--radius)', fontSize:'15px', fontWeight:600,
+                background:'var(--bg3)', color:'var(--text)'
+              }}>Cancel</button>
+              <button onClick={() => {
+                const fresh = {};
+                CATEGORIES.forEach(c => { fresh[c.id] = { exercises: [] }; });
+                localStorage.setItem(DB_KEY, JSON.stringify(fresh));
+                onDataChange(fresh);
+                setShowResetConfirm(false);
+                toast('All data has been reset');
+              }} style={{
+                flex:1, padding:'11px', borderRadius:'var(--radius)', fontSize:'15px', fontWeight:600,
+                background:'var(--red)', color:'#fff'
+              }}>Reset</button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
