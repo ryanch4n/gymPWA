@@ -13,8 +13,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script>
+// Apply saved theme immediately to prevent flash
+(function(){
+  var t = localStorage.getItem('gym_theme') || 'system';
+  document.documentElement.className = t;
+})();
+</script>
 <style>
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --radius: 8px;
+  /* Dark (default) */
   --bg: #09090b; --bg2: #18181b; --bg3: #27272a; --bg4: #3f3f46;
   --card: #18181b; --card-border: #27272a;
   --text: #fafafa; --text2: #a1a1aa; --text3: #71717a;
@@ -22,14 +33,23 @@
   --effort-clean: #3b82f6; --effort-yellow: #facc15; --effort-orange: #f97316;
   --ring: rgba(59,130,246,0.5);
   --input-bg: #18181b; --input-border: #3f3f46;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --radius: 8px;
   --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.3);
 }
+:root.light {
+  --bg: #fff; --bg2: #f9fafb; --bg3: #f3f4f6; --bg4: #e5e7eb;
+  --card: #fff; --card-border: #e5e7eb;
+  --text: #09090b; --text2: #52525b; --text3: #a1a1aa;
+  --blue: #2563eb; --red: #dc2626; --green: #16a34a; --yellow: #ca8a04; --orange: #ea580c;
+  --effort-clean: #3b82f6; --effort-yellow: #eab308; --effort-orange: #f97316;
+  --ring: rgba(37,99,235,0.3);
+  --input-bg: #fff; --input-border: #d1d5db;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+}
+/* System mode: follow OS preference when no explicit class is set */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root.system {
     --bg: #fff; --bg2: #f9fafb; --bg3: #f3f4f6; --bg4: #e5e7eb;
     --card: #fff; --card-border: #e5e7eb;
     --text: #09090b; --text2: #52525b; --text3: #a1a1aa;
@@ -117,6 +137,9 @@ const ICON_PATHS = {
   'circle-x': '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
   'bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   'minimize': '<path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/>',
+  'sun': '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  'moon': '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  'smartphone': '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
 };
 
 function Icon({ name, size = 22, style = {} }) {
@@ -266,14 +289,14 @@ function TabBar({ currentTab, onSwitchTab, activeWorkoutCatId }) {
             onClick={() => onSwitchTab(t.id)}
             style={{
               flex:1, display:'flex', flexDirection:'column', alignItems:'center',
-              padding:'8px 0 4px', fontSize:'10px', gap:'2px',
+              padding:'10px 0 6px', fontSize:'11px', gap:'4px',
               color, background:'none',
               fontWeight: isActive || hasWorkout ? 600 : 400,
               transition:'color 0.15s'
             }}
           >
             <span style={{ lineHeight:0, position:'relative' }}>
-              <Icon name={t.iconName} size={18} />
+              <Icon name={t.iconName} size={22} />
               {hasWorkout && <span style={{
                 position:'absolute', top:'-2px', right:'-4px',
                 width:'6px', height:'6px', borderRadius:'50%',
@@ -1797,8 +1820,50 @@ function SettingsView({ data, onDataChange }) {
     input.click();
   };
 
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('gym_theme') || 'system');
+
+  const applyTheme = (mode) => {
+    localStorage.setItem('gym_theme', mode);
+    document.documentElement.className = mode;
+    setThemeMode(mode);
+  };
+
   return (
     <div>
+      <div style={{ margin:'16px' }}>
+        <h3 style={{
+          fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
+          letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
+        }}>Appearance</h3>
+        <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
+          <div style={{ padding:'13px 16px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px' }}>
+              <Icon name="sun" size={18} />
+              <span style={{ fontSize:'16px' }}>Theme</span>
+            </div>
+            <div style={{ display:'flex', gap:'8px' }}>
+              {[
+                { id:'light', label:'Light', icon:'sun' },
+                { id:'dark', label:'Dark', icon:'moon' },
+                { id:'system', label:'System', icon:'smartphone' }
+              ].map(opt => (
+                <button key={opt.id} onClick={() => applyTheme(opt.id)} style={{
+                  flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'6px',
+                  padding:'10px 8px', borderRadius:'var(--radius)',
+                  background: themeMode === opt.id ? 'var(--blue)' : 'var(--bg3)',
+                  color: themeMode === opt.id ? '#fff' : 'var(--text2)',
+                  fontWeight: themeMode === opt.id ? 600 : 400,
+                  fontSize:'13px', transition:'all 0.2s'
+                }}>
+                  <Icon name={opt.icon} size={18} />
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div style={{ margin:'16px' }}>
         <h3 style={{
           fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
