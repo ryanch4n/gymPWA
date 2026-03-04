@@ -1292,10 +1292,10 @@ function CategoryView({ catId, data, onNavigateDetail }) {
 
 // --- Exercise Detail View ---
 function CombinedChart({ sessions }) {
-  const [mode, setMode] = useState('avg');
+  const [mode, setMode] = useState('e1rm');
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [selectedBarIdx, setSelectedBarIdx] = useState(null);
-  const [dateRange, setDateRange] = useState('all');
+  const [dateRange, setDateRange] = useState('3m');
   const [showInfo, setShowInfo] = useState(false);
 
   const RANGES = [
@@ -1323,22 +1323,16 @@ function CombinedChart({ sessions }) {
 
   // --- Line chart data ---
   const points = sorted.map((s, i) => {
-    const weights = (s.sets || []).map(set => set.weight).filter(w => w > 0);
-    const windowStart = Math.max(0, i - 2);
-    const windowSlice = sorted.slice(windowStart, i + 1);
-    const rollingAvg = windowSlice.reduce((sum, ws) => {
-      const ww = (ws.sets || []).map(set => set.weight).filter(w => w > 0);
-      return sum + (ww.length > 0 ? ww.reduce((a, b) => a + b, 0) / ww.length : 0);
-    }, 0) / windowSlice.length;
+    const sets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
     return {
       date: s.date,
-      weight: Math.max(...(s.sets || []).map(set => set.weight)),
+      weight: Math.max(...(s.sets || []).map(set => set.weight), 0),
       volume: (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0),
-      avg: Math.round(rollingAvg * 10) / 10
+      e1rm: sets.length > 0 ? Math.round(Math.max(...sets.map(set => set.weight * (1 + set.reps / 30))) * 10) / 10 : 0
     };
   });
 
-  const values = points.map(p => mode === 'avg' ? p.avg : mode === 'weight' ? p.weight : p.volume);
+  const values = points.map(p => mode === 'e1rm' ? p.e1rm : mode === 'weight' ? p.weight : p.volume);
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
   const valRange = maxVal - minVal || 1;
@@ -1355,7 +1349,7 @@ function CombinedChart({ sessions }) {
   const getY = (v) => padY + chartH - ((v - minVal) / valRange) * chartH;
 
   const pathD = points.map((p, i) => {
-    const v = mode === 'avg' ? p.avg : mode === 'weight' ? p.weight : p.volume;
+    const v = mode === 'e1rm' ? p.e1rm : mode === 'weight' ? p.weight : p.volume;
     return `${i === 0 ? 'M' : 'L'}${getX(i).toFixed(1)},${getY(v).toFixed(1)}`;
   }).join(' ');
 
@@ -1369,10 +1363,12 @@ function CombinedChart({ sessions }) {
 
   const formatVal = (v) => Math.round(v).toLocaleString();
 
-  // --- Progression bar chart data ---
+  // --- Progression bar chart data (using Epley e1RM) ---
   const sessionVolAvgs = sorted.map(s => {
     const sets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
-    return sets.length > 0 ? sets.reduce((sum, set) => sum + set.weight * set.reps, 0) / sets.length : 0;
+    if (sets.length === 0) return 0;
+    // Use best estimated 1RM (Epley) from each session: weight × (1 + reps/30)
+    return Math.max(...sets.map(set => set.weight * (1 + set.reps / 30)));
   });
 
   const deltas = [];
@@ -1446,7 +1442,7 @@ function CombinedChart({ sessions }) {
       <div style={subcardStyle}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 10px 6px' }}>
           <div style={{ display:'flex', gap:'4px' }}>
-            {[{key:'avg',label:'Avg Weight'},{key:'weight',label:'Max Weight'},{key:'volume',label:'Volume'}].map(m => (
+            {[{key:'e1rm',label:'Est 1RM'},{key:'weight',label:'Max Weight'},{key:'volume',label:'Volume'}].map(m => (
               <button key={m.key} onClick={() => { setMode(m.key); setSelectedIdx(null); }} style={{
                 padding:'4px 10px', borderRadius:'6px', fontSize:'11px', fontWeight:600,
                 background: mode === m.key ? 'var(--blue)' : 'transparent',
@@ -1479,7 +1475,7 @@ function CombinedChart({ sessions }) {
             <path d={areaD} fill={`url(#grad-${mode})`} />
             <path d={pathD} fill="none" stroke="var(--blue)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             {points.map((p, i) => {
-              const v = mode === 'avg' ? p.avg : mode === 'weight' ? p.weight : p.volume;
+              const v = mode === 'e1rm' ? p.e1rm : mode === 'weight' ? p.weight : p.volume;
               const cx = getX(i);
               const cy = getY(v);
               const isSelected = selectedIdx === i;
@@ -1545,10 +1541,11 @@ function CombinedChart({ sessions }) {
                 color:'var(--text2)', lineHeight:'1.5', boxShadow:'0 4px 20px rgba(0,0,0,0.5)',
                 border:'1px solid var(--bg4)'
               }}>
-                Tracks your session-over-session momentum using <strong style={{ color:'var(--text)' }}>volume per set</strong> (weight × reps).
+                Tracks your session-over-session momentum using <strong style={{ color:'var(--text)' }}>estimated 1RM</strong> (Epley formula).
                 Each bar shows the % change in your 3-session rolling average.
                 <span style={{ color:'var(--green)' }}> Green</span> = improving,
                 <span style={{ color:'var(--red)' }}> red</span> = declining.
+                Weight increases with fewer reps can still show as positive progress.
               </div>
             </>
           )}
@@ -1597,15 +1594,13 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
   const bestSingle = allSetsWithDate.length > 0
     ? allSetsWithDate.reduce((best, s) => (s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) ? s : best, allSetsWithDate[0])
     : null;
-  const bestVolSession = sessions.length > 0
-    ? sessions.reduce((best, s) => {
-        const vol = (s.sets || []).reduce((sum, set) => sum + set.weight * set.reps, 0);
-        return vol > (best.vol || 0) ? { vol, date: s.date } : best;
-      }, { vol: 0, date: null })
-    : { vol: 0, date: null };
-  const bestVolume = bestVolSession.vol;
-  const lastSession = sessions.length > 0 ? sessions[0] : null;
-  const lastTopSet = lastSession ? Math.max(...(lastSession.sets || []).map(s => s.weight)) : 0;
+  const bestE1rm = allSetsWithDate.length > 0
+    ? allSetsWithDate.reduce((best, s) => {
+        const e1rm = s.weight > 0 && s.reps > 0 ? s.weight * (1 + s.reps / 30) : 0;
+        return e1rm > best.e1rm ? { e1rm, date: s.date } : best;
+      }, { e1rm: 0, date: null })
+    : { e1rm: 0, date: null };
+  const sessionCount = sessions.length;
 
   const formatWeight = (w) => Math.round(w).toLocaleString();
 
@@ -1617,8 +1612,8 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
         <div style={{ display:'flex', gap:'8px', margin:'0 16px 8px' }}>
           {[
             { label: 'PR', value: bestSingle ? `${Math.round(bestSingle.weight)}lbs × ${bestSingle.reps}` : '—', date: bestSingle ? formatDate(bestSingle.date) : '\u00A0' },
-            { label: 'Best Volume', value: bestVolume > 0 ? formatWeight(bestVolume) + 'lbs' : '—', date: bestVolSession.date ? formatDate(bestVolSession.date) : '\u00A0' },
-            { label: 'Last Top Set', value: lastTopSet > 0 ? Math.round(lastTopSet) + 'lbs' : '—', date: lastSession ? formatDate(lastSession.date) : '\u00A0' }
+            { label: 'Best e1RM', value: bestE1rm.e1rm > 0 ? Math.round(bestE1rm.e1rm) + 'lbs' : '—', date: bestE1rm.date ? formatDate(bestE1rm.date) : '\u00A0' },
+            { label: 'Sessions', value: sessionCount > 0 ? sessionCount.toString() : '—', date: '\u00A0' }
           ].map((card, i) => (
             <div key={i} style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
               <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px', height:'14px' }}>{card.label}</div>
