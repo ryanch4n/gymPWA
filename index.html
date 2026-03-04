@@ -1600,7 +1600,12 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
         return e1rm > best.e1rm ? { e1rm, date: s.date } : best;
       }, { e1rm: 0, date: null })
     : { e1rm: 0, date: null };
-  const sessionCount = sessions.length;
+
+  // Compute best e1RM per session for history display
+  const sessionE1rms = sessions.map(s => {
+    const sets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
+    return sets.length > 0 ? Math.max(...sets.map(set => set.weight * (1 + set.reps / 30))) : 0;
+  });
 
   const formatWeight = (w) => Math.round(w).toLocaleString();
 
@@ -1612,8 +1617,7 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
         <div style={{ display:'flex', gap:'8px', margin:'0 16px 8px' }}>
           {[
             { label: 'PR', value: bestSingle ? `${Math.round(bestSingle.weight)}lbs × ${bestSingle.reps}` : '—', date: bestSingle ? formatDate(bestSingle.date) : '\u00A0' },
-            { label: 'Best e1RM', value: bestE1rm.e1rm > 0 ? Math.round(bestE1rm.e1rm) + 'lbs' : '—', date: bestE1rm.date ? formatDate(bestE1rm.date) : '\u00A0' },
-            { label: 'Sessions', value: sessionCount > 0 ? sessionCount.toString() : '—', date: '\u00A0' }
+            { label: 'Best e1RM', value: bestE1rm.e1rm > 0 ? Math.round(bestE1rm.e1rm) + 'lbs' : '—', date: bestE1rm.date ? formatDate(bestE1rm.date) : '\u00A0' }
           ].map((card, i) => (
             <div key={i} style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
               <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px', height:'14px' }}>{card.label}</div>
@@ -1630,13 +1634,24 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
         <EmptyState iconName="calendar" title="No workouts logged yet" subtitle="Start a new workout from the main screen" />
       ) : sessions.map((s, idx) => {
         const prevSession = idx < sessions.length - 1 ? sessions[idx + 1] : null;
+        const currE1rm = sessionE1rms[idx];
+        const prevE1rm = idx < sessions.length - 1 ? sessionE1rms[idx + 1] : 0;
+        const e1rmDiff = prevE1rm > 0 ? ((currE1rm - prevE1rm) / prevE1rm * 100) : 0;
+        const e1rmRounded = Math.round(Math.abs(e1rmDiff));
         return (
         <div key={idx} style={{
           background:'var(--bg2)', borderRadius:'12px', padding:'14px', margin:'8px 16px'
         }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start', position:'relative' }}>
             <div>
-              <div style={{ fontSize:'16px', fontWeight:600 }}>{formatDate(s.date)}</div>
+              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                <span style={{ fontSize:'16px', fontWeight:600 }}>{formatDate(s.date)}</span>
+                {prevE1rm > 0 && e1rmRounded > 0 && (
+                  <span style={{ fontSize:'11px', fontWeight:600, color: e1rmDiff >= 0 ? 'var(--green)' : 'var(--red)', display:'inline-flex', alignItems:'center', gap:'2px' }}>
+                    {e1rmDiff >= 0 ? '▲' : '▼'}{e1rmRounded}% e1RM
+                  </span>
+                )}
+              </div>
               {s.note && <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'2px' }}>{s.note}</div>}
             </div>
             <button onClick={() => setOpenMenu(openMenu === idx ? null : idx)} style={{ color:'var(--text3)', padding:'4px' }}>
