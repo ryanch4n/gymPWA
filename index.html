@@ -2043,17 +2043,52 @@ function App() {
 
   const currentView = viewStack[viewStack.length - 1];
 
+  const skipPopstateRef = useRef(false);
+
   const navigate = useCallback((view, params = {}) => {
-    setViewStack(prev => [...prev, { view, params }]);
+    setViewStack(prev => {
+      const next = [...prev, { view, params }];
+      history.pushState({ depth: next.length }, '');
+      return next;
+    });
   }, []);
 
   const goBack = useCallback(() => {
-    setViewStack(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+    setViewStack(prev => {
+      if (prev.length <= 1) return prev;
+      // Skip the popstate that history.back() will fire
+      skipPopstateRef.current = true;
+      history.back();
+      return prev.slice(0, -1);
+    });
   }, []);
 
   const switchTab = useCallback((tabId) => {
     setCurrentTab(tabId);
     setViewStack([{ view: tabId === 'settings' ? 'settings' : 'category', params: {} }]);
+    // Replace history so swipe-back doesn't go through old tab views
+    history.replaceState({ depth: 1 }, '');
+  }, []);
+
+  useEffect(() => {
+    history.replaceState({ depth: 1 }, '');
+
+    const handlePopstate = () => {
+      if (skipPopstateRef.current) {
+        skipPopstateRef.current = false;
+        return;
+      }
+      // Native swipe-back — pop the view stack
+      setViewStack(prev => {
+        if (prev.length > 1) return prev.slice(0, -1);
+        // At root — push state back so we don't exit the PWA
+        history.pushState({ depth: 1 }, '');
+        return prev;
+      });
+    };
+
+    window.addEventListener('popstate', handlePopstate);
+    return () => window.removeEventListener('popstate', handlePopstate);
   }, []);
 
   const handleNewWorkout = (catId) => {
