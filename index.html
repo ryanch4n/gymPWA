@@ -24,55 +24,64 @@
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --radius: 8px;
-  /* Dark (default) */
-  --bg: #09090b; --bg2: #18181b; --bg3: #27272a; --bg4: #3f3f46;
-  --card: #18181b; --card-border: #27272a;
-  --text: #fafafa; --text2: #a1a1aa; --text3: #71717a;
-  --blue: #3b82f6; --red: #ef4444; --green: #22c55e; --yellow: #eab308; --orange: #f97316;
-  --effort-clean: #3b82f6; --effort-yellow: #facc15; --effort-orange: #f97316;
-  --ring: rgba(59,130,246,0.5);
-  --input-bg: #18181b; --input-border: #3f3f46;
-  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.3);
+  --radius: 16px;
+  /* Dark (default) — Glassmorphism */
+  --bg: #050507; --bg2: rgba(255,255,255,0.04); --bg3: rgba(255,255,255,0.07); --bg4: rgba(255,255,255,0.12);
+  --card: rgba(255,255,255,0.06); --card-border: rgba(255,255,255,0.09);
+  --glass: rgba(255,255,255,0.05); --glass-strong: rgba(255,255,255,0.10); --glass-border: rgba(255,255,255,0.12);
+  --glass-blur: 24px; --glass-blur-strong: 40px;
+  --text: #f5f5f7; --text2: #a1a1aa; --text3: #636366;
+  --blue: #5e9eff; --red: #ff6b6b; --green: #34d399; --yellow: #fbbf24; --orange: #fb923c;
+  --effort-clean: #5e9eff; --effort-yellow: #fbbf24; --effort-orange: #fb923c;
+  --ring: rgba(94,158,255,0.4);
+  --input-bg: rgba(255,255,255,0.06); --input-border: rgba(255,255,255,0.12);
+  --shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 1px rgba(255,255,255,0.05) inset;
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.06) inset;
+  --overlay-bg: rgba(0,0,0,0.45);
 }
 :root.light {
-  --bg: #fff; --bg2: #f9fafb; --bg3: #f3f4f6; --bg4: #e5e7eb;
-  --card: #fff; --card-border: #e5e7eb;
-  --text: #09090b; --text2: #52525b; --text3: #a1a1aa;
-  --blue: #2563eb; --red: #dc2626; --green: #16a34a; --yellow: #ca8a04; --orange: #ea580c;
+  --bg: #f0f0f5; --bg2: rgba(255,255,255,0.55); --bg3: rgba(255,255,255,0.35); --bg4: rgba(0,0,0,0.06);
+  --card: rgba(255,255,255,0.60); --card-border: rgba(255,255,255,0.70);
+  --glass: rgba(255,255,255,0.50); --glass-strong: rgba(255,255,255,0.70); --glass-border: rgba(255,255,255,0.75);
+  --glass-blur: 24px; --glass-blur-strong: 40px;
+  --text: #1a1a1e; --text2: #52525b; --text3: #a1a1aa;
+  --blue: #3b82f6; --red: #ef4444; --green: #16a34a; --yellow: #ca8a04; --orange: #ea580c;
   --effort-clean: #3b82f6; --effort-yellow: #eab308; --effort-orange: #f97316;
-  --ring: rgba(37,99,235,0.3);
-  --input-bg: #fff; --input-border: #d1d5db;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --ring: rgba(59,130,246,0.3);
+  --input-bg: rgba(255,255,255,0.55); --input-border: rgba(0,0,0,0.08);
+  --shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0 1px rgba(255,255,255,0.8) inset;
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10), 0 0 1px rgba(255,255,255,0.9) inset;
+  --overlay-bg: rgba(0,0,0,0.25);
 }
 /* System mode: follow OS preference when no explicit class is set */
 @media (prefers-color-scheme: light) {
   :root.system {
-    --bg: #fff; --bg2: #f9fafb; --bg3: #f3f4f6; --bg4: #e5e7eb;
-    --card: #fff; --card-border: #e5e7eb;
-    --text: #09090b; --text2: #52525b; --text3: #a1a1aa;
-    --blue: #2563eb; --red: #dc2626; --green: #16a34a; --yellow: #ca8a04; --orange: #ea580c;
+    --bg: #f0f0f5; --bg2: rgba(255,255,255,0.55); --bg3: rgba(255,255,255,0.35); --bg4: rgba(0,0,0,0.06);
+    --card: rgba(255,255,255,0.60); --card-border: rgba(255,255,255,0.70);
+    --glass: rgba(255,255,255,0.50); --glass-strong: rgba(255,255,255,0.70); --glass-border: rgba(255,255,255,0.75);
+    --glass-blur: 24px; --glass-blur-strong: 40px;
+    --text: #1a1a1e; --text2: #52525b; --text3: #a1a1aa;
+    --blue: #3b82f6; --red: #ef4444; --green: #16a34a; --yellow: #ca8a04; --orange: #ea580c;
     --effort-clean: #3b82f6; --effort-yellow: #eab308; --effort-orange: #f97316;
-    --ring: rgba(37,99,235,0.3);
-    --input-bg: #fff; --input-border: #d1d5db;
-    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+    --ring: rgba(59,130,246,0.3);
+    --input-bg: rgba(255,255,255,0.55); --input-border: rgba(0,0,0,0.08);
+    --shadow: 0 2px 12px rgba(0,0,0,0.06), 0 0 1px rgba(255,255,255,0.8) inset;
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.10), 0 0 1px rgba(255,255,255,0.9) inset;
+    --overlay-bg: rgba(0,0,0,0.25);
   }
 }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html { min-height:calc(100% + env(safe-area-inset-top,0px)); background:var(--card); }
-body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro','Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); overflow:hidden; height:100dvh; position:fixed; width:100%; }
+html { min-height:calc(100% + env(safe-area-inset-top,0px)); background:var(--bg); }
+body { font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro','Helvetica Neue',sans-serif; background:var(--bg); color:var(--text); overflow:hidden; height:100dvh; position:fixed; width:100%; -webkit-font-smoothing:antialiased; }
 button { font-family:inherit; border:none; cursor:pointer; background:none; color:inherit; font-size:inherit; }
-input,textarea { font-family:inherit; font-size:16px; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:var(--radius); padding:10px 12px; outline:none; width:100%; transition:border-color 0.15s,box-shadow 0.15s; }
+input,textarea { font-family:inherit; font-size:16px; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:12px; padding:10px 14px; outline:none; width:100%; transition:border-color 0.2s,box-shadow 0.2s; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
 textarea { resize:none; min-height:60px; }
-input:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 2px var(--ring); }
+input:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--ring); }
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
 input[type=number] { -moz-appearance:textfield; }
-select { font-family:inherit; font-size:16px; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:var(--radius); padding:10px 12px; width:100%; outline:none; -webkit-appearance:none; transition:border-color 0.15s; }
-select:focus { border-color:var(--blue); box-shadow:0 0 0 2px var(--ring); }
+select { font-family:inherit; font-size:16px; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:12px; padding:10px 14px; width:100%; outline:none; -webkit-appearance:none; transition:border-color 0.2s; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+select:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--ring); }
 
 /* Animations */
 @keyframes slideInRight { from { transform:translateX(100%); } to { transform:translateX(0); } }
@@ -82,13 +91,18 @@ select:focus { border-color:var(--blue); box-shadow:0 0 0 2px var(--ring); }
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
 @keyframes pulse-ring { 0% { transform:scale(1); opacity:0.6; } 100% { transform:scale(2.2); opacity:0; } }
+@keyframes shimmer { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
 
-.slide-in { animation: slideInRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-.slide-out { animation: slideOutRight 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-.modal-enter { animation: slideInUp 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-.modal-exit { animation: slideOutDown 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-.fade-in { animation: fadeIn 0.2s ease forwards; }
+.slide-in { animation: slideInRight 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+.slide-out { animation: slideOutRight 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+.modal-enter { animation: slideInUp 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+.modal-exit { animation: slideOutDown 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+.fade-in { animation: fadeIn 0.25s ease forwards; }
 .fade-out { animation: fadeOut 0.2s ease forwards; }
+
+/* Glass surface utility */
+.glass { background:var(--card); backdrop-filter:blur(var(--glass-blur)); -webkit-backdrop-filter:blur(var(--glass-blur)); border:1px solid var(--card-border); }
+.glass-strong { background:var(--glass-strong); backdrop-filter:blur(var(--glass-blur-strong)); -webkit-backdrop-filter:blur(var(--glass-blur-strong)); border:1px solid var(--glass-border); }
 </style>
 </head>
 <body>
@@ -182,8 +196,9 @@ function ToastProvider({ children }) {
         {toasts.map(t => (
           <div key={t.id} className={t.exiting ? 'fade-out' : 'fade-in'} style={{
             display:'flex', alignItems:'center', gap:'10px', padding:'12px 16px',
-            background:'var(--card)', border:'1px solid var(--card-border)',
-            borderRadius:'var(--radius)', boxShadow:'var(--shadow-lg)'
+            background:'var(--glass-strong)', border:'1px solid var(--glass-border)',
+            borderRadius:'var(--radius)', boxShadow:'var(--shadow-lg)',
+            backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
           }}>
             <Icon name={t.type === 'success' ? 'circle-check' : 'circle-x'} size={18}
               style={{ color: t.type === 'success' ? 'var(--green)' : 'var(--red)', flexShrink:0 }} />
@@ -276,7 +291,8 @@ function TabBar({ currentTab, onSwitchTab, activeWorkoutCatId }) {
 
   return (
     <div style={{
-      display:'flex', borderTop:'1px solid var(--card-border)', background:'var(--card)',
+      display:'flex', borderTop:'1px solid var(--glass-border)', background:'var(--glass-strong)',
+      backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))',
       paddingBottom:'var(--safe-bottom)', flexShrink:0
     }}>
       {tabs.map(t => {
@@ -315,13 +331,14 @@ function TabBar({ currentTab, onSwitchTab, activeWorkoutCatId }) {
 function ConfirmDialog({ title, message, onConfirm, onCancel }) {
   return (
     <div className="fade-in" style={{
-      position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
-      display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px'
+      position:'fixed', inset:0, background:'var(--overlay-bg)', zIndex:200,
+      display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px',
+      backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
     }}>
       <div style={{
-        background:'var(--card)', borderRadius:'12px', width:'100%', maxWidth:'320px',
-        border:'1px solid var(--card-border)', boxShadow:'var(--shadow-lg)',
-        overflow:'hidden'
+        background:'var(--glass-strong)', borderRadius:'20px', width:'100%', maxWidth:'320px',
+        border:'1px solid var(--glass-border)', boxShadow:'var(--shadow-lg)',
+        overflow:'hidden', backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
       }}>
         <div style={{ padding:'20px 20px 16px', textAlign:'center' }}>
           <div style={{ fontSize:'17px', fontWeight:600 }}>{title}</div>
@@ -329,14 +346,14 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }) {
         </div>
         <div style={{ display:'flex', gap:'8px', padding:'0 16px 16px' }}>
           <button onClick={onCancel} style={{
-            flex:1, padding:'10px', fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)',
-            border:'1px solid var(--input-border)', background:'var(--card)', color:'var(--text)',
-            transition:'background 0.15s'
+            flex:1, padding:'11px', fontSize:'14px', fontWeight:500, borderRadius:'12px',
+            border:'1px solid var(--glass-border)', background:'var(--glass)', color:'var(--text)',
+            transition:'all 0.2s', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)'
           }}>Cancel</button>
           <button onClick={onConfirm} style={{
-            flex:1, padding:'10px', fontSize:'14px', fontWeight:600, borderRadius:'var(--radius)',
+            flex:1, padding:'11px', fontSize:'14px', fontWeight:600, borderRadius:'12px',
             background:'var(--red)', color:'#fff', border:'none',
-            transition:'opacity 0.15s'
+            transition:'all 0.2s'
           }}>Delete</button>
         </div>
       </div>
@@ -347,9 +364,9 @@ function ConfirmDialog({ title, message, onConfirm, onCancel }) {
 // --- Set Badge ---
 function SetBadge({ set, compact }) {
   const effortStyles = [
-    { background:'rgba(59,130,246,0.15)', color:'var(--effort-clean)', border:'1px solid rgba(59,130,246,0.3)' },
-    { background:'rgba(250,204,21,0.15)', color:'var(--effort-yellow)', border:'1px solid rgba(250,204,21,0.3)' },
-    { background:'rgba(249,115,22,0.15)', color:'var(--effort-orange)', border:'1px solid rgba(249,115,22,0.3)' },
+    { background:'rgba(94,158,255,0.12)', color:'var(--effort-clean)', border:'1px solid rgba(94,158,255,0.25)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' },
+    { background:'rgba(251,191,36,0.12)', color:'var(--effort-yellow)', border:'1px solid rgba(251,191,36,0.25)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' },
+    { background:'rgba(251,146,60,0.12)', color:'var(--effort-orange)', border:'1px solid rgba(251,146,60,0.25)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)' },
   ];
   const s = effortStyles[set.effort] || effortStyles[0];
   return (
@@ -384,10 +401,11 @@ function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
       <button onClick={() => onStep(-1)} style={{
-        width:'38px', height:'38px', background:'var(--bg3)', color:'var(--text)',
+        width:'38px', height:'38px', background:'var(--glass)', color:'var(--text)',
         fontSize:'20px', fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center',
-        borderRadius:'var(--radius)', border:'none',
-        transition:'background 0.15s', WebkitTapHighlightColor:'transparent'
+        borderRadius:'12px', border:'1px solid var(--glass-border)',
+        transition:'all 0.2s', WebkitTapHighlightColor:'transparent',
+        backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)'
       }}>−</button>
       <input
         type="number"
@@ -402,10 +420,11 @@ function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
         }}
       />
       <button onClick={() => onStep(1)} style={{
-        width:'38px', height:'38px', background:'var(--bg3)', color:'var(--text)',
+        width:'38px', height:'38px', background:'var(--glass)', color:'var(--text)',
         fontSize:'20px', fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center',
-        borderRadius:'var(--radius)', border:'none',
-        transition:'background 0.15s', WebkitTapHighlightColor:'transparent'
+        borderRadius:'12px', border:'1px solid var(--glass-border)',
+        transition:'all 0.2s', WebkitTapHighlightColor:'transparent',
+        backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)'
       }}>+</button>
     </div>
   );
@@ -431,7 +450,7 @@ function DeltaHint({ current, previous }) {
 function SetEditor({ setIndex, set, onUpdate, onDelete, prevSet }) {
   const [showMenu, setShowMenu] = useState(false);
   return (
-    <div style={{ background:'var(--card)', borderRadius:'var(--radius)', padding:'12px', border:'1px solid var(--card-border)', boxShadow:'var(--shadow)' }}>
+    <div style={{ background:'var(--card)', borderRadius:'var(--radius)', padding:'14px', border:'1px solid var(--card-border)', boxShadow:'var(--shadow)', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px', position:'relative' }}>
         <span style={{ fontSize:'13px', fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Set {setIndex + 1}</span>
         <button onClick={() => setShowMenu(!showMenu)} style={{ color:'var(--text3)', padding:'4px' }}>
@@ -442,9 +461,9 @@ function SetEditor({ setIndex, set, onUpdate, onDelete, prevSet }) {
             <div onClick={() => setShowMenu(false)} style={{ position:'fixed', inset:0, zIndex:50 }} />
             <div style={{
               position:'absolute', top:'100%', right:0, zIndex:51,
-              background:'var(--bg2)', borderRadius:'10px', overflow:'hidden',
-              boxShadow:'0 4px 20px rgba(0,0,0,0.5)', border:'1px solid var(--bg4)',
-              minWidth:'160px'
+              background:'var(--glass-strong)', borderRadius:'14px', overflow:'hidden',
+              boxShadow:'var(--shadow-lg)', border:'1px solid var(--glass-border)',
+              minWidth:'160px', backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
             }}>
               <button onClick={() => { onDelete(); setShowMenu(false); }} style={{
                 width:'100%', padding:'12px 16px', textAlign:'left',
@@ -489,11 +508,12 @@ function SetEditor({ setIndex, set, onUpdate, onDelete, prevSet }) {
               key={e}
               onClick={() => onUpdate({ ...set, effort: e })}
               style={{
-                flex:1, padding:'7px 4px', borderRadius:'var(--radius)', textAlign:'center',
-                fontSize:'11px', fontWeight:600, transition:'all 0.15s',
-                background: selected ? colors.bg : 'transparent',
+                flex:1, padding:'8px 4px', borderRadius:'12px', textAlign:'center',
+                fontSize:'11px', fontWeight:600, transition:'all 0.2s',
+                background: selected ? colors.bg : 'var(--glass)',
                 color: selected ? '#fff' : 'var(--text3)',
-                border: selected ? '1px solid ' + colors.bg : '1px solid var(--input-border)'
+                border: selected ? '1px solid ' + colors.bg : '1px solid var(--glass-border)',
+                backdropFilter: selected ? 'none' : 'blur(8px)', WebkitBackdropFilter: selected ? 'none' : 'blur(8px)'
               }}
             >
               {EFFORT_LABELS[e]}
@@ -627,7 +647,8 @@ function RestTimerBar() {
 
   return (
     <div style={{
-      borderBottom:'1px solid var(--bg3)', background:'var(--bg2)',
+      borderBottom:'1px solid var(--glass-border)', background:'var(--glass)',
+      backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))',
       flexShrink:0
     }}>
       {!running ? (
@@ -635,8 +656,9 @@ function RestTimerBar() {
           <span style={{ fontSize:'13px', color:'var(--text3)', fontWeight:600, whiteSpace:'nowrap', marginRight:'4px' }}>Rest</span>
           {[60,90,120,180].map(d => (
             <button key={d} onClick={() => startRest(d)} style={{
-              flex:1, padding:'10px 0', background:'var(--bg3)', color:'var(--text)',
-              fontSize:'14px', fontWeight:600, borderRadius:'10px', textAlign:'center'
+              flex:1, padding:'10px 0', background:'var(--glass)', color:'var(--text)',
+              fontSize:'14px', fontWeight:600, borderRadius:'12px', textAlign:'center',
+              border:'1px solid var(--glass-border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
             }}>
               {Math.floor(d/60)}:{String(d%60).padStart(2,'0')}
             </button>
@@ -659,12 +681,14 @@ function RestTimerBar() {
               }} />
             </div>
             <button onClick={addTime} style={{
-              padding:'8px 12px', borderRadius:'8px', fontSize:'13px', fontWeight:600,
-              background:'rgba(48,209,88,0.2)', color:'var(--green)', whiteSpace:'nowrap'
+              padding:'8px 14px', borderRadius:'10px', fontSize:'13px', fontWeight:600,
+              background:'rgba(52,211,153,0.15)', color:'var(--green)', whiteSpace:'nowrap',
+              border:'1px solid rgba(52,211,153,0.2)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
             }}>+30s</button>
             <button onClick={stop} style={{
-              padding:'8px 12px', borderRadius:'8px', fontSize:'13px', fontWeight:600,
-              background:'rgba(255,69,58,0.2)', color:'var(--red)'
+              padding:'8px 14px', borderRadius:'10px', fontSize:'13px', fontWeight:600,
+              background:'rgba(255,107,107,0.15)', color:'var(--red)',
+              border:'1px solid rgba(255,107,107,0.2)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
             }}>Stop</button>
           </div>
         </div>
@@ -844,8 +868,8 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
     }}>
         <div style={{
           display:'flex', justifyContent:'space-between', alignItems:'center',
-          padding:'calc(var(--safe-top) + 12px) 16px 12px', borderBottom:'1px solid var(--card-border)', flexShrink:0,
-          background:'var(--bg)'
+          padding:'calc(var(--safe-top) + 12px) 16px 12px', borderBottom:'1px solid var(--glass-border)', flexShrink:0,
+          background:'var(--glass-strong)', backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
         }}>
           {isEdit ? (
             <button onClick={() => hasChanges ? setShowCancelConfirm(true) : onClose()} style={{
@@ -876,9 +900,9 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
             <div style={{ minWidth:'36px', display:'flex', justifyContent:'flex-end' }}>
               {hasChanges && (
                 <button onClick={() => setShowSaveConfirm(true)} style={{
-                  padding:'6px 12px', fontSize:'14px', fontWeight:600,
+                  padding:'7px 14px', fontSize:'14px', fontWeight:600,
                   background:'var(--green)', color:'#fff', border:'none',
-                  borderRadius:'var(--radius)', whiteSpace:'nowrap'
+                  borderRadius:'12px', whiteSpace:'nowrap'
                 }}>Save</button>
               )}
             </div>
@@ -892,14 +916,15 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                   <div onClick={() => setShowWorkoutMenu(false)} style={{ position:'fixed', inset:0, zIndex:150 }} />
                   <div style={{
                     position:'absolute', right:0, top:'100%', marginTop:'4px', zIndex:151,
-                    background:'var(--card)', border:'1px solid var(--card-border)', borderRadius:'var(--radius)',
-                    boxShadow:'var(--shadow-lg)', minWidth:'180px', overflow:'hidden'
+                    background:'var(--glass-strong)', border:'1px solid var(--glass-border)', borderRadius:'14px',
+                    boxShadow:'var(--shadow-lg)', minWidth:'180px', overflow:'hidden',
+                    backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
                   }}>
                     {onMinimize && (
                       <button onClick={() => { setShowWorkoutMenu(false); handleMinimize(); }} style={{
                         width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
                         display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                        borderBottom:'1px solid var(--card-border)'
+                        borderBottom:'1px solid var(--glass-border)'
                       }}>
                         <Icon name="minimize" size={16} style={{ color:'var(--blue)' }} /> Minimize
                       </button>
@@ -907,14 +932,14 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                     <button onClick={() => { setShowWorkoutMenu(false); setShowSaveConfirm(true); }} style={{
                       width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
                       display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                      borderBottom:'1px solid var(--card-border)'
+                      borderBottom:'1px solid var(--glass-border)'
                     }}>
                       <Icon name="circle-check" size={16} style={{ color:'var(--green)' }} /> Save Workout
                     </button>
                     <button onClick={() => { setShowWorkoutMenu(false); handleCoachPrompt(); }} style={{
                       width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
                       display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                      borderBottom:'1px solid var(--card-border)'
+                      borderBottom:'1px solid var(--glass-border)'
                     }}>
                       <Icon name="sparkles" size={16} style={{ color:'var(--yellow)' }} /> Coach Prompt
                     </button>
@@ -940,8 +965,8 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
 
           {/* Exercise sections */}
           {exStates.map((ex, ei) => (
-            <div key={ex.id} style={{ marginBottom:'16px', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--card-border)' }}>
-              <div style={{ padding:'14px', background:'var(--bg2)' }}>
+            <div key={ex.id} style={{ marginBottom:'16px', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--glass-border)' }}>
+              <div style={{ padding:'14px', background:'var(--glass)', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))' }}>
                 <button onClick={() => toggleCollapse(ei)} style={{
                   width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', textAlign:'left'
                 }}>
@@ -1045,10 +1070,11 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                     />
                   ))}
                   <button onClick={() => addSet(ei)} style={{
-                    display:'block', width:'100%', padding:'10px',
-                    background:'transparent', color:'var(--blue)',
+                    display:'block', width:'100%', padding:'11px',
+                    background:'var(--glass)', color:'var(--blue)',
                     fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)', textAlign:'center',
-                    border:'1px dashed var(--input-border)'
+                    border:'1px dashed var(--glass-border)',
+                    backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
                   }}>
                     <Icon name="plus" size={14} /> Add Set
                   </button>
@@ -1060,13 +1086,15 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
         </div>
       {showSaveConfirm && (
         <div className="fade-in" onClick={() => setShowSaveConfirm(false)} style={{
-          position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
-          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px'
+          position:'fixed', inset:0, background:'var(--overlay-bg)', zIndex:200,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px',
+          backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            width:'100%', maxWidth:'320px', background:'var(--card)',
-            borderRadius:'12px', border:'1px solid var(--card-border)',
-            boxShadow:'var(--shadow-lg)', overflow:'hidden'
+            width:'100%', maxWidth:'320px', background:'var(--glass-strong)',
+            borderRadius:'20px', border:'1px solid var(--glass-border)',
+            boxShadow:'var(--shadow-lg)', overflow:'hidden',
+            backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
           }}>
             <div style={{ padding:'20px 20px 16px', textAlign:'center' }}>
               <div style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Save Changes?' : 'Save Workout?'}</div>
@@ -1074,11 +1102,12 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
             </div>
             <div style={{ display:'flex', gap:'8px', padding:'0 16px 16px' }}>
               <button onClick={() => setShowSaveConfirm(false)} style={{
-                flex:1, padding:'10px', fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)',
-                border:'1px solid var(--input-border)', background:'var(--card)', color:'var(--text)'
+                flex:1, padding:'11px', fontSize:'14px', fontWeight:500, borderRadius:'12px',
+                border:'1px solid var(--glass-border)', background:'var(--glass)', color:'var(--text)',
+                backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)'
               }}>Cancel</button>
               <button onClick={() => { setShowSaveConfirm(false); handleSave(); }} style={{
-                flex:1, padding:'10px', fontSize:'14px', fontWeight:600, borderRadius:'var(--radius)',
+                flex:1, padding:'11px', fontSize:'14px', fontWeight:600, borderRadius:'12px',
                 background:'var(--green)', color:'#fff', border:'none'
               }}>Save</button>
             </div>
@@ -1087,13 +1116,15 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
       )}
       {showCancelConfirm && (
         <div className="fade-in" onClick={() => setShowCancelConfirm(false)} style={{
-          position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
-          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px'
+          position:'fixed', inset:0, background:'var(--overlay-bg)', zIndex:200,
+          display:'flex', alignItems:'center', justifyContent:'center', padding:'0 24px',
+          backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            width:'100%', maxWidth:'320px', background:'var(--card)',
-            borderRadius:'12px', border:'1px solid var(--card-border)',
-            boxShadow:'var(--shadow-lg)', overflow:'hidden'
+            width:'100%', maxWidth:'320px', background:'var(--glass-strong)',
+            borderRadius:'20px', border:'1px solid var(--glass-border)',
+            boxShadow:'var(--shadow-lg)', overflow:'hidden',
+            backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
           }}>
             <div style={{ padding:'20px 20px 16px', textAlign:'center' }}>
               <div style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Discard Changes?' : 'Discard Workout?'}</div>
@@ -1101,11 +1132,12 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
             </div>
             <div style={{ display:'flex', gap:'8px', padding:'0 16px 16px' }}>
               <button onClick={() => setShowCancelConfirm(false)} style={{
-                flex:1, padding:'10px', fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)',
-                border:'1px solid var(--input-border)', background:'var(--card)', color:'var(--text)'
+                flex:1, padding:'11px', fontSize:'14px', fontWeight:500, borderRadius:'12px',
+                border:'1px solid var(--glass-border)', background:'var(--glass)', color:'var(--text)',
+                backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)'
               }}>Keep Editing</button>
               <button onClick={onClose} style={{
-                flex:1, padding:'10px', fontSize:'14px', fontWeight:600, borderRadius:'var(--radius)',
+                flex:1, padding:'11px', fontSize:'14px', fontWeight:600, borderRadius:'12px',
                 background:'var(--red)', color:'#fff', border:'none'
               }}>Discard</button>
             </div>
@@ -1114,16 +1146,18 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
       )}
       {coachPrompt && (
         <div className="fade-in" onClick={() => setCoachPrompt(null)} style={{
-          position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
-          display:'flex', alignItems:'flex-end', justifyContent:'center'
+          position:'fixed', inset:0, background:'var(--overlay-bg)', zIndex:200,
+          display:'flex', alignItems:'flex-end', justifyContent:'center',
+          backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
         }}>
           <div onClick={e => e.stopPropagation()} className="modal-enter" style={{
-            width:'100%', maxHeight:'80vh', background:'var(--card)',
-            borderRadius:'16px 16px 0 0', border:'1px solid var(--card-border)',
+            width:'100%', maxHeight:'80vh', background:'var(--glass-strong)',
+            borderRadius:'20px 20px 0 0', border:'1px solid var(--glass-border)',
             boxShadow:'var(--shadow-lg)', display:'flex', flexDirection:'column',
-            paddingBottom:'var(--safe-bottom)'
+            paddingBottom:'var(--safe-bottom)',
+            backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
           }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px', borderBottom:'1px solid var(--card-border)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px', borderBottom:'1px solid var(--glass-border)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
                 <Icon name="sparkles" size={18} style={{ color:'var(--yellow)' }} />
                 <span style={{ fontSize:'17px', fontWeight:600 }}>Coach Prompt</span>
@@ -1138,15 +1172,15 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                 whiteSpace:'pre-wrap', wordBreak:'break-word', fontFamily:'inherit'
               }}>{coachPrompt}</pre>
             </div>
-            <div style={{ padding:'12px 16px', borderTop:'1px solid var(--card-border)' }}>
+            <div style={{ padding:'12px 16px', borderTop:'1px solid var(--glass-border)' }}>
               <button onClick={() => {
                 navigator.clipboard.writeText(coachPrompt).then(() => {
                   toast('Copied to clipboard');
                   setCoachPrompt(null);
                 }).catch(() => toast('Failed to copy', 'error'));
               }} style={{
-                width:'100%', padding:'12px', fontSize:'15px', fontWeight:600,
-                borderRadius:'var(--radius)', background:'var(--blue)', color:'#fff', border:'none'
+                width:'100%', padding:'13px', fontSize:'15px', fontWeight:600,
+                borderRadius:'14px', background:'var(--blue)', color:'#fff', border:'none'
               }}>Copy to Clipboard</button>
             </div>
           </div>
@@ -1172,16 +1206,19 @@ function AddExerciseModal({ onSave, onClose }) {
 
   return (
     <div className="fade-in" style={{
-      position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:100,
-      display:'flex', alignItems:'flex-end', justifyContent:'center'
+      position:'fixed', inset:0, background:'var(--overlay-bg)', zIndex:100,
+      display:'flex', alignItems:'flex-end', justifyContent:'center',
+      backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
     }}>
       <div className="modal-enter" style={{
-        background:'var(--bg2)', width:'100%', borderRadius:'16px 16px 0 0',
-        paddingBottom:'var(--safe-bottom)'
+        background:'var(--glass-strong)', width:'100%', borderRadius:'20px 20px 0 0',
+        paddingBottom:'var(--safe-bottom)',
+        backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))',
+        border:'1px solid var(--glass-border)', borderBottom:'none'
       }}>
         <div style={{
           display:'flex', justifyContent:'space-between', alignItems:'center',
-          padding:'14px 16px', borderBottom:'1px solid var(--card-border)'
+          padding:'14px 16px', borderBottom:'1px solid var(--glass-border)'
         }}>
           <button onClick={onClose} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Cancel</button>
           <h2 style={{ fontSize:'17px', fontWeight:600 }}>Add Exercise</h2>
@@ -1204,17 +1241,20 @@ function ArchivedModal({ catId, data, onRestore, onDelete, onClose }) {
 
   return (
     <div className="fade-in" style={{
-      position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:100,
-      display:'flex', alignItems:'flex-end', justifyContent:'center'
+      position:'fixed', inset:0, background:'var(--overlay-bg)', zIndex:100,
+      display:'flex', alignItems:'flex-end', justifyContent:'center',
+      backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
     }}>
       <div className="modal-enter" style={{
-        background:'var(--bg2)', width:'100%', maxHeight:'80dvh',
-        borderRadius:'16px 16px 0 0', display:'flex', flexDirection:'column',
-        overflow:'hidden', paddingBottom:'var(--safe-bottom)'
+        background:'var(--glass-strong)', width:'100%', maxHeight:'80dvh',
+        borderRadius:'20px 20px 0 0', display:'flex', flexDirection:'column',
+        overflow:'hidden', paddingBottom:'var(--safe-bottom)',
+        backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))',
+        border:'1px solid var(--glass-border)', borderBottom:'none'
       }}>
         <div style={{
           display:'flex', justifyContent:'space-between', alignItems:'center',
-          padding:'14px 16px', borderBottom:'1px solid var(--bg3)', flexShrink:0
+          padding:'14px 16px', borderBottom:'1px solid var(--glass-border)', flexShrink:0
         }}>
           <button onClick={onClose} style={{ fontSize:'17px', color:'var(--blue)', fontWeight:500 }}>Done</button>
           <h2 style={{ fontSize:'17px', fontWeight:600 }}>Archived Exercises</h2>
@@ -1226,7 +1266,7 @@ function ArchivedModal({ catId, data, onRestore, onDelete, onClose }) {
           ) : archived.map(ex => (
             <div key={ex.id} style={{
               display:'flex', alignItems:'center', justifyContent:'space-between',
-              padding:'14px 16px', borderBottom:'1px solid var(--bg3)'
+              padding:'14px 16px', borderBottom:'1px solid var(--glass-border)'
             }}>
               <div>
                 <div style={{ fontSize:'17px', fontWeight:600 }}>{ex.name}</div>
@@ -1261,7 +1301,7 @@ function CategoryView({ catId, data, onNavigateDetail }) {
       {exercises.map(ex => {
         const latest = getLatestSession(ex);
         return (
-          <div key={ex.id} style={{ padding:'14px 16px', borderBottom:'1px solid var(--bg3)' }}>
+          <div key={ex.id} style={{ padding:'14px 16px', borderBottom:'1px solid var(--glass-border)' }}>
             <button onClick={() => onNavigateDetail(catId, ex.id)} style={{
               display:'block', width:'100%', textAlign:'left'
             }}>
@@ -1433,25 +1473,26 @@ function CombinedChart({ sessions }) {
   }
 
   const subcardStyle = {
-    background:'var(--bg2)', borderRadius:'10px',
-    border:'1px solid var(--card-border)',
-    margin:'0 10px', padding:'10px 4px 8px'
+    background:'var(--glass)', borderRadius:'14px',
+    border:'1px solid var(--glass-border)',
+    margin:'0 10px', padding:'10px 4px 8px',
+    backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)'
   };
 
   return (
     <div style={{
       margin:'12px 16px 8px', background:'var(--card)', borderRadius:'var(--radius)',
       border:'1px solid var(--card-border)', overflow:'hidden', boxShadow:'var(--shadow)', position:'relative',
-      paddingBottom:'10px'
+      paddingBottom:'10px', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))'
     }}>
       {/* Shared date range picker — top level */}
       <div style={{ display:'flex', gap:'4px', padding:'12px 14px 10px' }}>
         {RANGES.map(r => (
           <button key={r.key} onClick={() => handleDateChange(r.key)} style={{
-            flex:1, padding:'5px 0', borderRadius:'5px', fontSize:'11px', fontWeight:600,
-            background: dateRange === r.key ? 'var(--bg4)' : 'transparent',
+            flex:1, padding:'6px 0', borderRadius:'8px', fontSize:'11px', fontWeight:600,
+            background: dateRange === r.key ? 'var(--glass-strong)' : 'transparent',
             color: dateRange === r.key ? 'var(--text)' : 'var(--text3)',
-            border: dateRange === r.key ? 'none' : '1px solid var(--input-border)', transition:'all 0.15s'
+            border: dateRange === r.key ? '1px solid var(--glass-border)' : '1px solid transparent', transition:'all 0.2s'
           }}>{r.label}</button>
         ))}
       </div>
@@ -1462,11 +1503,11 @@ function CombinedChart({ sessions }) {
           <div style={{ display:'flex', gap:'4px' }}>
             {[{key:'e1rm',label:'Est 1RM'},{key:'weight',label:'Max Weight'},{key:'volume',label:'Volume'}].map(m => (
               <button key={m.key} onClick={() => { setMode(m.key); setSelectedIdx(null); }} style={{
-                padding:'4px 10px', borderRadius:'6px', fontSize:'11px', fontWeight:600,
-                background: mode === m.key ? 'var(--blue)' : 'transparent',
+                padding:'5px 10px', borderRadius:'8px', fontSize:'11px', fontWeight:600,
+                background: mode === m.key ? 'var(--blue)' : 'var(--glass)',
                 color: mode === m.key ? '#fff' : 'var(--text3)',
-                border: mode === m.key ? 'none' : '1px solid var(--input-border)',
-                transition:'all 0.15s'
+                border: mode === m.key ? 'none' : '1px solid var(--glass-border)',
+                transition:'all 0.2s'
               }}>{m.label}</button>
             ))}
           </div>
@@ -1555,9 +1596,10 @@ function CombinedChart({ sessions }) {
               <div onClick={() => setShowInfo(false)} style={{ position:'fixed', inset:0, zIndex:50 }} />
               <div style={{
                 position:'absolute', left:'14px', right:'14px', zIndex:51,
-                background:'var(--bg3)', borderRadius:'10px', padding:'12px', fontSize:'13px',
-                color:'var(--text2)', lineHeight:'1.5', boxShadow:'0 4px 20px rgba(0,0,0,0.5)',
-                border:'1px solid var(--bg4)'
+                background:'var(--glass-strong)', borderRadius:'14px', padding:'12px', fontSize:'13px',
+                color:'var(--text2)', lineHeight:'1.5', boxShadow:'var(--shadow-lg)',
+                border:'1px solid var(--glass-border)',
+                backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
               }}>
                 Tracks your session-over-session momentum using <strong style={{ color:'var(--text)' }}>estimated 1RM</strong> (Epley formula).
                 Each bar shows the % change in your 3-session rolling average.
@@ -1637,7 +1679,7 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
             { label: 'PR', value: bestSingle ? `${Math.round(bestSingle.weight)}lbs × ${bestSingle.reps}` : '—', date: bestSingle ? formatDate(bestSingle.date) : '\u00A0' },
             { label: 'Best e1RM', value: bestE1rm.e1rm > 0 ? Math.round(bestE1rm.e1rm) + 'lbs' : '—', date: bestE1rm.date ? formatDate(bestE1rm.date) : '\u00A0' }
           ].map((card, i) => (
-            <div key={i} style={{ flex:1, background:'var(--bg2)', borderRadius:'12px', padding:'12px', textAlign:'center' }}>
+            <div key={i} style={{ flex:1, background:'var(--card)', borderRadius:'var(--radius)', padding:'12px', textAlign:'center', border:'1px solid var(--card-border)', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))' }}>
               <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px', height:'14px' }}>{card.label}</div>
               <div style={{ fontSize:'17px', fontWeight:700, marginTop:'6px', height:'22px', display:'flex', alignItems:'center', justifyContent:'center' }}>{card.value}</div>
               <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:'6px', height:'14px' }}>{card.date}</div>
@@ -1658,7 +1700,8 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
         const e1rmRounded = Math.round(Math.abs(e1rmDiff));
         return (
         <div key={idx} style={{
-          background:'var(--bg2)', borderRadius:'12px', padding:'14px', margin:'8px 16px'
+          background:'var(--card)', borderRadius:'var(--radius)', padding:'14px', margin:'8px 16px',
+          border:'1px solid var(--card-border)', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))'
         }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start', position:'relative' }}>
             <div>
@@ -1680,14 +1723,14 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
                 <div onClick={() => setOpenMenu(null)} style={{ position:'fixed', inset:0, zIndex:50 }} />
                 <div style={{
                   position:'absolute', top:'100%', right:0, zIndex:51,
-                  background:'var(--bg3)', borderRadius:'10px', overflow:'hidden',
-                  boxShadow:'0 4px 20px rgba(0,0,0,0.5)', border:'1px solid var(--bg4)',
-                  minWidth:'160px'
+                  background:'var(--glass-strong)', borderRadius:'14px', overflow:'hidden',
+                  boxShadow:'var(--shadow-lg)', border:'1px solid var(--glass-border)',
+                  minWidth:'160px', backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
                 }}>
                   <button onClick={() => { if (onEditSession) onEditSession(catId, exId, s.date); setOpenMenu(null); }} style={{
                     width:'100%', padding:'12px 16px', textAlign:'left',
                     fontSize:'15px', color:'var(--text)', display:'flex', alignItems:'center', gap:'10px',
-                    borderBottom:'1px solid var(--bg4)'
+                    borderBottom:'1px solid var(--glass-border)'
                   }}>
                     <Icon name="edit" size={16} /> Edit Session
                   </button>
@@ -1863,7 +1906,7 @@ function SettingsView({ data, onDataChange }) {
           fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
           letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
         }}>Appearance</h3>
-        <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
+        <div style={{ background:'var(--card)', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--card-border)', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))' }}>
           <div style={{ padding:'13px 16px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'12px' }}>
               <Icon name="sun" size={18} />
@@ -1877,11 +1920,12 @@ function SettingsView({ data, onDataChange }) {
               ].map(opt => (
                 <button key={opt.id} onClick={() => applyTheme(opt.id)} style={{
                   flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'6px',
-                  padding:'10px 8px', borderRadius:'var(--radius)',
-                  background: themeMode === opt.id ? 'var(--blue)' : 'var(--bg3)',
+                  padding:'10px 8px', borderRadius:'12px',
+                  background: themeMode === opt.id ? 'var(--blue)' : 'var(--glass)',
                   color: themeMode === opt.id ? '#fff' : 'var(--text2)',
                   fontWeight: themeMode === opt.id ? 600 : 400,
-                  fontSize:'13px', transition:'all 0.2s'
+                  fontSize:'13px', transition:'all 0.2s',
+                  border: themeMode === opt.id ? 'none' : '1px solid var(--glass-border)'
                 }}>
                   <Icon name={opt.icon} size={18} />
                   {opt.label}
@@ -1897,7 +1941,7 @@ function SettingsView({ data, onDataChange }) {
           fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
           letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
         }}>Notifications</h3>
-        <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
+        <div style={{ background:'var(--card)', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--card-border)', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))' }}>
           <div style={{
             display:'flex', justifyContent:'space-between', alignItems:'center',
             padding:'13px 16px'
@@ -1933,17 +1977,17 @@ function SettingsView({ data, onDataChange }) {
           fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
           letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
         }}>About</h3>
-        <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
+        <div style={{ background:'var(--card)', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--card-border)', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))' }}>
           <div style={{
             display:'flex', justifyContent:'space-between', alignItems:'center',
-            padding:'13px 16px', borderBottom:'1px solid var(--bg3)'
+            padding:'13px 16px', borderBottom:'1px solid var(--glass-border)'
           }}>
             <span style={{ fontSize:'16px' }}>Storage</span>
             <span style={{ fontSize:'16px', color:'var(--text3)' }}>localStorage</span>
           </div>
           <div style={{
             display:'flex', justifyContent:'space-between', alignItems:'center',
-            padding:'13px 16px', borderBottom:'1px solid var(--bg3)'
+            padding:'13px 16px', borderBottom:'1px solid var(--glass-border)'
           }}>
             <span style={{ fontSize:'16px' }}>Last Saved</span>
             <span style={{ fontSize:'16px', color:'var(--text3)' }}>{data._lastSaved ? formatDate(data._lastSaved) : 'Never'}</span>
@@ -1963,14 +2007,14 @@ function SettingsView({ data, onDataChange }) {
           fontSize:'13px', color:'var(--text3)', textTransform:'uppercase',
           letterSpacing:'0.5px', marginBottom:'8px', paddingLeft:'4px'
         }}>Data Management</h3>
-        <div style={{ background:'var(--bg2)', borderRadius:'12px', overflow:'hidden' }}>
-          <div style={{ padding:'13px 16px', borderBottom:'1px solid var(--bg3)' }}>
+        <div style={{ background:'var(--card)', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--card-border)', backdropFilter:'blur(var(--glass-blur))', WebkitBackdropFilter:'blur(var(--glass-blur))' }}>
+          <div style={{ padding:'13px 16px', borderBottom:'1px solid var(--glass-border)' }}>
             <button onClick={handleExport} style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', textAlign:'left' }}>
               <Icon name="upload" size={18} />
               <span style={{ fontSize:'16px' }}>Export JSON Backup</span>
             </button>
           </div>
-          <div style={{ padding:'13px 16px', borderBottom:'1px solid var(--bg3)' }}>
+          <div style={{ padding:'13px 16px', borderBottom:'1px solid var(--glass-border)' }}>
             <button onClick={handleImport} style={{ width:'100%', display:'flex', alignItems:'center', gap:'8px', textAlign:'left' }}>
               <Icon name="download" size={18} />
               <span style={{ fontSize:'16px' }}>Import JSON File</span>
@@ -1989,14 +2033,16 @@ function SettingsView({ data, onDataChange }) {
       {showResetConfirm && (
         <>
           <div onClick={() => setShowResetConfirm(false)} style={{
-            position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:200,
-            animation:'fadeIn 0.2s ease'
+            position:'fixed', inset:0, background:'var(--overlay-bg)', zIndex:200,
+            animation:'fadeIn 0.2s ease',
+            backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'
           }} />
           <div style={{
             position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', zIndex:201,
-            background:'var(--card)', borderRadius:'14px', padding:'24px', width:'min(320px, 85vw)',
-            boxShadow:'var(--shadow-lg)', border:'1px solid var(--card-border)',
-            animation:'fadeIn 0.2s ease'
+            background:'var(--glass-strong)', borderRadius:'20px', padding:'24px', width:'min(320px, 85vw)',
+            boxShadow:'var(--shadow-lg)', border:'1px solid var(--glass-border)',
+            animation:'fadeIn 0.2s ease',
+            backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
           }}>
             <div style={{ fontSize:'17px', fontWeight:700, marginBottom:'8px' }}>Reset All Data?</div>
             <div style={{ fontSize:'14px', color:'var(--text2)', marginBottom:'20px', lineHeight:'1.5' }}>
@@ -2004,8 +2050,9 @@ function SettingsView({ data, onDataChange }) {
             </div>
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => setShowResetConfirm(false)} style={{
-                flex:1, padding:'11px', borderRadius:'var(--radius)', fontSize:'15px', fontWeight:600,
-                background:'var(--bg3)', color:'var(--text)'
+                flex:1, padding:'11px', borderRadius:'12px', fontSize:'15px', fontWeight:600,
+                background:'var(--glass)', color:'var(--text)', border:'1px solid var(--glass-border)',
+                backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)'
               }}>Cancel</button>
               <button onClick={() => {
                 const fresh = {};
@@ -2015,7 +2062,7 @@ function SettingsView({ data, onDataChange }) {
                 setShowResetConfirm(false);
                 toast('All data has been reset');
               }} style={{
-                flex:1, padding:'11px', borderRadius:'var(--radius)', fontSize:'15px', fontWeight:600,
+                flex:1, padding:'11px', borderRadius:'12px', fontSize:'15px', fontWeight:600,
                 background:'var(--red)', color:'#fff'
               }}>Reset</button>
             </div>
@@ -2285,7 +2332,8 @@ function App() {
       {/* Header */}
       <div style={{
         padding: 'calc(var(--safe-top) + 8px) 16px 8px',
-        background:'var(--bg)', borderBottom:'1px solid var(--bg3)', flexShrink:0
+        background:'var(--glass-strong)', borderBottom:'1px solid var(--glass-border)', flexShrink:0,
+        backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
       }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'8px', flex:1, minWidth:0 }}>
@@ -2317,13 +2365,14 @@ function App() {
                     <div onClick={() => setShowHeaderMenu(false)} style={{ position:'fixed', inset:0, zIndex:50 }} />
                     <div style={{
                       position:'absolute', right:0, top:'100%', marginTop:'4px', zIndex:51,
-                      background:'var(--card)', border:'1px solid var(--card-border)', borderRadius:'var(--radius)',
-                      boxShadow:'var(--shadow-lg)', minWidth:'160px', overflow:'hidden'
+                      background:'var(--glass-strong)', border:'1px solid var(--glass-border)', borderRadius:'14px',
+                      boxShadow:'var(--shadow-lg)', minWidth:'160px', overflow:'hidden',
+                      backdropFilter:'blur(var(--glass-blur-strong))', WebkitBackdropFilter:'blur(var(--glass-blur-strong))'
                     }}>
                       <button onClick={() => { setShowHeaderMenu(false); handleStartEdit(); }} style={{
                         width:'100%', padding:'12px 16px', fontSize:'15px', color:'var(--text)',
                         display:'flex', alignItems:'center', gap:'10px', textAlign:'left',
-                        borderBottom:'1px solid var(--card-border)'
+                        borderBottom:'1px solid var(--glass-border)'
                       }}>
                         <Icon name="edit" size={16} /> Rename
                       </button>
@@ -2361,7 +2410,7 @@ function App() {
             )}
             {showAddBtn && minimizedWorkout && minimizedWorkout.catId === currentTab && (
               <button onClick={handleResumeWorkout} style={{
-                padding:'4px 10px', borderRadius:'var(--radius)',
+                padding:'5px 12px', borderRadius:'12px',
                 background:'var(--green)', color:'#fff', fontSize:'13px', fontWeight:600,
                 display:'flex', alignItems:'center', gap:'4px'
               }}>
