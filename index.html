@@ -140,6 +140,7 @@ const ICON_PATHS = {
   'sun': '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   'moon': '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   'smartphone': '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+  'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
 };
 
 function Icon({ name, size = 22, style = {} }) {
@@ -710,6 +711,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showWorkoutMenu, setShowWorkoutMenu] = useState(false);
   const [coachPrompt, setCoachPrompt] = useState(null);
+  const [historyExId, setHistoryExId] = useState(null);
   const toast = useToast();
 
   // Workout duration timer (epoch-based so it survives minimize/sleep)
@@ -969,7 +971,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                       <div style={{ fontSize:'12px', color:'var(--text3)' }}>{ex.repRange}</div>
                     )}
                   </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
                     {ex.lastSets && (() => {
                       const curr = ex.sets.filter(s => s.weight > 0 && s.reps > 0);
                       if (curr.length === 0) return null;
@@ -988,6 +990,11 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                         </span>
                       );
                     })()}
+                    <button onClick={(e) => { e.stopPropagation(); setHistoryExId(ex.id); }} style={{
+                      padding:'4px', color:'var(--blue)', display:'flex', alignItems:'center'
+                    }} title="View history">
+                      <Icon name="clock" size={16} />
+                    </button>
                     {ex.sets.length > 0 && ex.sets.every(s => s.reps > 0) && (
                       <span style={{ color:'var(--green)', display:'flex' }}><Icon name="circle-check" size={16} /></span>
                     )}
@@ -1058,6 +1065,82 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
           ))}
           <div style={{ height:'40px' }} />
         </div>
+      {historyExId && (() => {
+        const histEx = getExercise(data, catId, historyExId);
+        if (!histEx) return null;
+        const histSessions = [...(histEx.sessions || [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
+        return (
+          <div className="fade-in" onClick={() => setHistoryExId(null)} style={{
+            position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
+            display:'flex', alignItems:'flex-end', justifyContent:'center'
+          }}>
+            <div onClick={e => e.stopPropagation()} className="modal-enter" style={{
+              width:'100%', maxHeight:'75vh', background:'var(--card)',
+              borderRadius:'16px 16px 0 0', border:'1px solid var(--card-border)',
+              boxShadow:'var(--shadow-lg)', display:'flex', flexDirection:'column',
+              paddingBottom:'var(--safe-bottom)'
+            }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px', borderBottom:'1px solid var(--card-border)', flexShrink:0 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                  <Icon name="clock" size={18} style={{ color:'var(--blue)' }} />
+                  <span style={{ fontSize:'17px', fontWeight:600 }}>{histEx.name}</span>
+                </div>
+                <button onClick={() => setHistoryExId(null)} style={{ padding:'4px', color:'var(--text3)' }}>
+                  <Icon name="x" size={20} />
+                </button>
+              </div>
+              <div style={{ flex:1, overflowY:'auto', padding:'12px 16px' }}>
+                {histSessions.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text3)', fontSize:'14px' }}>No previous sessions</div>
+                ) : histSessions.map((s, idx) => {
+                  const prevS = idx < histSessions.length - 1 ? histSessions[idx + 1] : null;
+                  return (
+                    <div key={idx} style={{
+                      background:'var(--bg2)', borderRadius:'10px', padding:'12px', marginBottom:'8px'
+                    }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
+                        <span style={{ fontSize:'15px', fontWeight:600 }}>{formatDate(s.date)}</span>
+                        {prevS && (() => {
+                          const currSets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
+                          const prevSets = (prevS.sets || []).filter(set => set.weight > 0 && set.reps > 0);
+                          if (currSets.length === 0 || prevSets.length === 0) return null;
+                          const currE1rm = Math.max(...currSets.map(set => set.weight * (1 + set.reps / 30)));
+                          const prevE1rm = Math.max(...prevSets.map(set => set.weight * (1 + set.reps / 30)));
+                          const pct = ((currE1rm - prevE1rm) / prevE1rm * 100);
+                          const rounded = Math.round(Math.abs(pct));
+                          if (rounded === 0) return null;
+                          return (
+                            <span style={{ fontSize:'11px', fontWeight:600, color: pct >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                              {pct >= 0 ? '▲' : '▼'}{rounded}% e1RM
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      {s.note && <div style={{ fontSize:'13px', color:'var(--text2)', marginBottom:'6px' }}>{s.note}</div>}
+                      {(s.sets || []).map((set, i) => (
+                        <div key={i} style={{
+                          display:'flex', alignItems:'center', padding:'3px 0', fontSize:'13px'
+                        }}>
+                          <span style={{ color:'var(--text3)', width:'44px' }}>Set {i+1}</span>
+                          <span style={{ fontWeight:600, width:'70px' }}>{Math.round(set.weight)}lbs</span>
+                          <span style={{ width:'60px' }}>&times; {set.reps} reps</span>
+                          <span style={{ display:'flex', alignItems:'center', gap:'4px' }}>
+                            <span style={{
+                              width:'8px', height:'8px', borderRadius:'50%',
+                              background: EFFORT_COLORS[set.effort] || '#636366'
+                            }} />
+                            <span style={{ fontSize:'11px', color:'var(--text3)' }}>{EFFORT_LABELS[set.effort] || ''}</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {showSaveConfirm && (
         <div className="fade-in" onClick={() => setShowSaveConfirm(false)} style={{
           position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
@@ -2126,7 +2209,11 @@ function App() {
   };
 
   const handleDiscardWorkout = () => {
-    setMinimizedWorkout(null);
+    // Only clear minimized workout if we're NOT in edit mode
+    // (editing a past session should never touch the active workout)
+    if (!modalParams?.editSession) {
+      setMinimizedWorkout(null);
+    }
     setModal(null);
   };
 
@@ -2152,7 +2239,10 @@ function App() {
     });
 
     if (saved) updateData(newData);
-    setMinimizedWorkout(null);
+    // Only clear minimized workout if this was an active workout, not an edit
+    if (!modalParams?.editSession) {
+      setMinimizedWorkout(null);
+    }
     setModal(null);
   };
 
