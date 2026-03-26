@@ -142,6 +142,8 @@ const ICON_PATHS = {
   'moon': '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   'smartphone': '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
   'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  'grip-vertical': '<circle cx="9" cy="4" r="1"/><circle cx="15" cy="4" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="20" r="1"/><circle cx="15" cy="20" r="1"/>',
+  'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
 };
 
 function Icon({ name, size = 22, style = {} }) {
@@ -275,6 +277,39 @@ function getExercise(data, catId, exId) {
   return (data[catId]?.exercises || []).find(e => e.id === exId);
 }
 
+// Determine which category is "next" based on weekly progress.
+// Categories go left-to-right: push → pull → legs → shoulders_arms → abs.
+// Looks at this week's completed workouts and returns the next undone category.
+function getNextCategory(data) {
+  if (!data) return 'push';
+  // Get start of current week (Monday)
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon, ...
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+  const mondayStr = monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
+
+  const order = CATEGORIES.map(c => c.id);
+  const doneThisWeek = new Set();
+
+  order.forEach(catId => {
+    const exercises = (data[catId]?.exercises || []).filter(e => e.active !== false);
+    const hasDoneThisWeek = exercises.some(ex =>
+      (ex.sessions || []).some(s => s.date >= mondayStr)
+    );
+    if (hasDoneThisWeek) doneThisWeek.add(catId);
+  });
+
+  // Return the first category not done this week
+  for (const catId of order) {
+    if (!doneThisWeek.has(catId)) return catId;
+  }
+  // All done — default to first
+  return order[0];
+}
+
 function getLatestSession(exercise) {
   if (!exercise.sessions || !exercise.sessions.length) return null;
   return [...exercise.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
@@ -283,7 +318,7 @@ function getLatestSession(exercise) {
 // ==================== COMPONENTS ====================
 
 // --- Tab Bar ---
-function TabBar({ currentTab, onSwitchTab, activeWorkoutCatId }) {
+function TabBar({ currentTab, onSwitchTab, activeWorkoutCatId, suggestedCatId }) {
   const tabs = [
     ...CATEGORIES.map(c => ({ id:c.id, name:c.name, iconName:c.iconName })),
     { id:'settings', name:'Settings', iconName:'settings' }
@@ -297,7 +332,8 @@ function TabBar({ currentTab, onSwitchTab, activeWorkoutCatId }) {
       {tabs.map(t => {
         const isActive = currentTab === t.id;
         const hasWorkout = activeWorkoutCatId === t.id;
-        const color = hasWorkout ? 'var(--green)' : (isActive ? 'var(--blue)' : 'var(--text3)');
+        const isSuggested = !activeWorkoutCatId && suggestedCatId === t.id;
+        const color = hasWorkout ? 'var(--green)' : isSuggested ? 'var(--orange)' : (isActive ? 'var(--blue)' : 'var(--text3)');
         return (
           <button
             key={t.id}
@@ -306,7 +342,7 @@ function TabBar({ currentTab, onSwitchTab, activeWorkoutCatId }) {
               flex:1, display:'flex', flexDirection:'column', alignItems:'center',
               padding:'10px 0 6px', fontSize:'11px', gap:'4px',
               color, background:'none',
-              fontWeight: isActive || hasWorkout ? 600 : 400,
+              fontWeight: isActive || hasWorkout || isSuggested ? 600 : 400,
               transition:'color 0.15s'
             }}
           >
@@ -443,8 +479,9 @@ function DeltaHint({ current, previous }) {
   );
 }
 
-function SetEditor({ setIndex, set, onUpdate, onDelete, prevSet }) {
+function SetEditor({ setIndex, set, onUpdate, onDelete, onAddSet, prevSet }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   return (
     <div style={{ background:'var(--card)', borderRadius:'var(--radius)', padding:'12px', border:'1px solid var(--card-border)', boxShadow:'var(--shadow)' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px', position:'relative' }}>
@@ -461,7 +498,14 @@ function SetEditor({ setIndex, set, onUpdate, onDelete, prevSet }) {
               boxShadow:'0 4px 20px rgba(0,0,0,0.5)', border:'1px solid var(--bg4)',
               minWidth:'160px'
             }}>
-              <button onClick={() => { onDelete(); setShowMenu(false); }} style={{
+              <button onClick={() => { onAddSet(); setShowMenu(false); }} style={{
+                width:'100%', padding:'12px 16px', textAlign:'left',
+                fontSize:'15px', color:'var(--text)', display:'flex', alignItems:'center', gap:'10px',
+                borderBottom:'1px solid var(--bg4)'
+              }}>
+                <Icon name="plus" size={16} /> Add Set
+              </button>
+              <button onClick={() => { setShowMenu(false); setShowDeleteConfirm(true); }} style={{
                 width:'100%', padding:'12px 16px', textAlign:'left',
                 fontSize:'15px', color:'var(--red)', display:'flex', alignItems:'center', gap:'10px'
               }}>
@@ -471,6 +515,25 @@ function SetEditor({ setIndex, set, onUpdate, onDelete, prevSet }) {
           </>
         )}
       </div>
+      {showDeleteConfirm && (
+        <div style={{
+          display:'flex', alignItems:'center', justifyContent:'space-between',
+          padding:'8px 10px', marginBottom:'10px', borderRadius:'var(--radius)',
+          background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.3)'
+        }}>
+          <span style={{ fontSize:'13px', color:'var(--red)', fontWeight:500 }}>Delete this set?</span>
+          <div style={{ display:'flex', gap:'8px' }}>
+            <button onClick={() => setShowDeleteConfirm(false)} style={{
+              padding:'5px 12px', fontSize:'13px', fontWeight:500, borderRadius:'var(--radius)',
+              background:'var(--bg3)', color:'var(--text)'
+            }}>Cancel</button>
+            <button onClick={() => { setShowDeleteConfirm(false); onDelete(); }} style={{
+              padding:'5px 12px', fontSize:'13px', fontWeight:600, borderRadius:'var(--radius)',
+              background:'var(--red)', color:'#fff', border:'none'
+            }}>Delete</button>
+          </div>
+        </div>
+      )}
       <div style={{ display:'flex', gap:'10px', marginBottom:'10px' }}>
         <div style={{ flex:1 }}>
           <label style={{ fontSize:'12px', color:'var(--text2)', display:'flex', alignItems:'center', marginBottom:'4px' }}>Weight (lbs){set.weight > 0 && prevSet && <DeltaHint current={set.weight} previous={prevSet.weight} />}</label>
@@ -1087,17 +1150,10 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                       set={s}
                       onUpdate={newSet => updateSet(ei, si, newSet)}
                       onDelete={() => deleteSet(ei, si)}
+                      onAddSet={() => addSet(ei)}
                       prevSet={ex.lastSets && ex.lastSets[si] ? ex.lastSets[si] : null}
                     />
                   ))}
-                  <button onClick={() => addSet(ei)} style={{
-                    display:'block', width:'100%', padding:'10px',
-                    background:'transparent', color:'var(--blue)',
-                    fontSize:'14px', fontWeight:500, borderRadius:'var(--radius)', textAlign:'center',
-                    border:'1px dashed var(--input-border)'
-                  }}>
-                    <Icon name="plus" size={14} /> Add Set
-                  </button>
                 </div>
               )}
             </div>
@@ -1141,10 +1197,10 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                     const prevS = idx < histSessions.length - 1 ? histSessions[idx + 1] : null;
                     return (
                       <div key={idx} style={{
-                        background:'var(--bg2)', borderRadius:'10px', padding:'12px', marginBottom:'8px'
+                        background:'var(--bg2)', borderRadius:'10px', padding:'14px 16px', marginBottom:'10px'
                       }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
-                          <span style={{ fontSize:'15px', fontWeight:600 }}>{formatDate(s.date)}</span>
+                        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
+                          <span style={{ fontSize:'17px', fontWeight:600 }}>{formatDate(s.date)}</span>
                           {prevS && (() => {
                             const currSets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
                             const prevSets = (prevS.sets || []).filter(set => set.weight > 0 && set.reps > 0);
@@ -1155,29 +1211,45 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                             const rounded = Math.round(Math.abs(pct));
                             if (rounded === 0) return null;
                             return (
-                              <span style={{ fontSize:'11px', fontWeight:600, color: pct >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                              <span style={{ fontSize:'13px', fontWeight:600, color: pct >= 0 ? 'var(--green)' : 'var(--red)' }}>
                                 {pct >= 0 ? '▲' : '▼'}{rounded}% e1RM
                               </span>
                             );
                           })()}
                         </div>
-                        {s.note && <div style={{ fontSize:'13px', color:'var(--text2)', marginBottom:'6px' }}>{s.note}</div>}
-                        {(s.sets || []).map((set, i) => (
-                          <div key={i} style={{
-                            display:'flex', alignItems:'center', padding:'3px 0', fontSize:'13px'
-                          }}>
-                            <span style={{ color:'var(--text3)', width:'44px' }}>Set {i+1}</span>
-                            <span style={{ fontWeight:600, width:'70px' }}>{Math.round(set.weight)}lbs</span>
-                            <span style={{ width:'60px' }}>&times; {set.reps} reps</span>
-                            <span style={{ display:'flex', alignItems:'center', gap:'4px' }}>
-                              <span style={{
-                                width:'8px', height:'8px', borderRadius:'50%',
-                                background: EFFORT_COLORS[set.effort] || '#636366'
-                              }} />
-                              <span style={{ fontSize:'11px', color:'var(--text3)' }}>{EFFORT_LABELS[set.effort] || ''}</span>
-                            </span>
-                          </div>
-                        ))}
+                        {s.note && <div style={{ fontSize:'14px', color:'var(--text2)', marginBottom:'8px' }}>{s.note}</div>}
+                        {(() => {
+                          const maxVol = Math.max(...(s.sets || []).map(st => st.weight * st.reps), 1);
+                          return (s.sets || []).map((set, i) => {
+                            const vol = set.weight * set.reps;
+                            const pct = maxVol > 0 ? (vol / maxVol) * 100 : 0;
+                            return (
+                              <div key={i} style={{
+                                display:'flex', alignItems:'center', padding:'5px 0', fontSize:'15px'
+                              }}>
+                                <span style={{ color:'var(--text3)', flexShrink:0, marginRight:'14px' }}>Set {i+1}</span>
+                                <span style={{ display:'inline-flex', alignItems:'center', gap:'6px', flexShrink:0, width:'170px' }}>
+                                  <span style={{ fontWeight:600, width:'60px', textAlign:'right' }}>{Math.round(set.weight)}lbs</span>
+                                  <span style={{ color:'var(--text3)' }}>&times;</span>
+                                  <span style={{ width:'58px' }}>{set.reps} reps</span>
+                                </span>
+                                <span style={{ flex:1, display:'flex', alignItems:'center', gap:'6px', minWidth:0, marginLeft:'14px' }}>
+                                  <span style={{
+                                    flex:1, height:'8px', borderRadius:'4px',
+                                    background:'var(--bg3)', overflow:'hidden'
+                                  }}>
+                                    <span style={{
+                                      display:'block', height:'100%', borderRadius:'4px',
+                                      width: pct + '%',
+                                      background: EFFORT_COLORS[set.effort] || 'var(--blue)',
+                                      transition:'width 0.3s ease'
+                                    }} />
+                                  </span>
+                                </span>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     );
                   })}
@@ -1452,59 +1524,180 @@ function CategoryView({ catId, data, onEditSession }) {
   );
 }
 
-// --- Exercise List View (manage exercises) ---
-function ExerciseListView({ catId, data, onNavigateDetail, onAdd, onArchived }) {
+// --- Exercise List View (manage exercises with drag-to-reorder) ---
+function ExerciseListView({ catId, data, onNavigateDetail, onAdd, onArchived, onReorder }) {
   const exercises = getActiveExercises(data, catId);
   const archivedCount = getArchivedExercises(data, catId).length;
 
+  const [dragIdx, setDragIdx] = useState(null);
+  const [overIdx, setOverIdx] = useState(null);
+  const itemRefs = useRef([]);
+  const dragStartY = useRef(0);
+  const longPressTimer = useRef(null);
+  const hasMoved = useRef(false);
+  const containerRef = useRef(null);
+
+  // Compute display order
+  const displayOrder = useMemo(() => {
+    const order = exercises.map((_, i) => i);
+    if (dragIdx != null && overIdx != null && dragIdx !== overIdx) {
+      const item = order.splice(dragIdx, 1)[0];
+      order.splice(overIdx, 0, item);
+    }
+    return order;
+  }, [exercises.length, dragIdx, overIdx]);
+
+  const findOverIdx = (clientY) => {
+    for (let i = 0; i < itemRefs.current.length; i++) {
+      const el = itemRefs.current[i];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (clientY >= rect.top && clientY <= rect.bottom) return i;
+    }
+    return null;
+  };
+
+  const finishDrag = () => {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    if (dragIdx != null && overIdx != null && dragIdx !== overIdx) {
+      onReorder(dragIdx, overIdx);
+    }
+    setDragIdx(null);
+    setOverIdx(null);
+  };
+
+  // --- Touch handlers (long-press to activate) ---
+  const handleTouchStart = (idx, e) => {
+    hasMoved.current = false;
+    const touch = e.touches[0];
+    dragStartY.current = touch.clientY;
+    longPressTimer.current = setTimeout(() => {
+      setDragIdx(idx);
+      setOverIdx(idx);
+      hasMoved.current = true;
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 300);
+  };
+
+  const handleTouchMove = (e) => {
+    if (dragIdx == null) {
+      if (longPressTimer.current) {
+        const dy = Math.abs(e.touches[0].clientY - dragStartY.current);
+        if (dy > 10) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+      }
+      return;
+    }
+    e.preventDefault();
+    const idx = findOverIdx(e.touches[0].clientY);
+    if (idx != null && idx !== overIdx) setOverIdx(idx);
+  };
+
+  // --- Mouse handlers (click grip handle to activate) ---
+  const dragIdxRef = useRef(null);
+  const overIdxRef = useRef(null);
+  useEffect(() => { dragIdxRef.current = dragIdx; }, [dragIdx]);
+  useEffect(() => { overIdxRef.current = overIdx; }, [overIdx]);
+
+  const handleGripMouseDown = (idx, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    hasMoved.current = true;
+    setDragIdx(idx);
+    setOverIdx(idx);
+    dragIdxRef.current = idx;
+    overIdxRef.current = idx;
+
+    const onMouseMove = (ev) => {
+      const i = findOverIdx(ev.clientY);
+      if (i != null) {
+        overIdxRef.current = i;
+        setOverIdx(i);
+      }
+    };
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      const dIdx = dragIdxRef.current;
+      const oIdx = overIdxRef.current;
+      if (dIdx != null && oIdx != null && dIdx !== oIdx) {
+        onReorder(dIdx, oIdx);
+      }
+      setDragIdx(null);
+      setOverIdx(null);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleClick = (ex) => {
+    if (!hasMoved.current) {
+      onNavigateDetail(catId, ex.id);
+    }
+  };
+
   return (
-    <div>
+    <div ref={containerRef} onTouchMove={handleTouchMove} onTouchEnd={() => finishDrag()} style={{ userSelect: dragIdx != null ? 'none' : 'auto' }}>
       {exercises.length === 0 && (
         <EmptyState iconName="dumbbell" title="No exercises yet" subtitle="Tap + to add your first exercise" />
       )}
-      {exercises.map(ex => {
+      {displayOrder.map((exIdx, displayPos) => {
+        const ex = exercises[exIdx];
         const latest = getLatestSession(ex);
+        const isDragging = dragIdx != null && exIdx === dragIdx;
         return (
-          <div key={ex.id} style={{ padding:'14px 16px', borderBottom:'1px solid var(--bg3)' }}>
-            <button onClick={() => onNavigateDetail(catId, ex.id)} style={{
-              display:'block', width:'100%', textAlign:'left'
-            }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:'17px', fontWeight:600 }}>{ex.name}</div>
-                  <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'2px' }}>{ex.repRange}</div>
-                  {latest ? (
-                    <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'6px' }}>
-                      Prev: {formatDate(latest.date)}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'6px' }}>No sessions logged</div>
-                  )}
-                  {latest && (
-                    <div style={{ display:'flex', gap:'3px', marginTop:'6px', flexWrap:'wrap' }}>
-                      {latest.sets.map((s, i) => <SetBadge key={i} set={s} compact />)}
-                    </div>
-                  )}
+          <div
+            key={ex.id}
+            ref={el => itemRefs.current[displayPos] = el}
+            onTouchStart={e => handleTouchStart(exIdx, e)}
+            onClick={() => handleClick(ex)}
+            style={{
+              padding:'14px 16px', borderBottom:'1px solid var(--bg3)',
+              display:'flex', alignItems:'center', gap:'12px',
+              background: isDragging ? 'var(--bg3)' : 'transparent',
+              opacity: isDragging ? 0.8 : 1,
+              transition: dragIdx != null ? 'none' : 'background 0.15s',
+              cursor: dragIdx != null ? 'grabbing' : 'pointer'
+            }}
+          >
+            <div
+              onMouseDown={e => handleGripMouseDown(exIdx, e)}
+              style={{ color:'var(--text3)', flexShrink:0, touchAction:'none', cursor:'grab', padding:'4px' }}
+            >
+              <Icon name="grip-vertical" size={18} />
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:'17px', fontWeight:600 }}>{ex.name}</div>
+              <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'2px' }}>{ex.repRange}</div>
+              {latest ? (
+                <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'6px' }}>
+                  Prev: {formatDate(latest.date)}
                 </div>
-                {latest && (() => {
-                  const allSets = (ex.sessions || []).flatMap(s => s.sets || []);
-                  const best = allSets.reduce((b, s) => s.weight > b.weight ? s : b, allSets[0]);
-                  const lastTop = Math.max(...(latest.sets || []).map(s => s.weight));
-                  return (
-                    <div style={{ display:'flex', flexDirection:'column', gap:'6px', alignItems:'flex-end', marginLeft:'12px', flexShrink:0 }}>
-                      <div style={{ textAlign:'right' }}>
-                        <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>PR</div>
-                        <div style={{ fontSize:'15px', fontWeight:700 }}>{Math.round(best.weight)}lbs</div>
-                      </div>
-                      <div style={{ textAlign:'right' }}>
-                        <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>Last</div>
-                        <div style={{ fontSize:'15px', fontWeight:700 }}>{Math.round(lastTop)}lbs</div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </button>
+              ) : (
+                <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'6px' }}>No sessions logged</div>
+              )}
+              {latest && (
+                <div style={{ display:'flex', gap:'3px', marginTop:'6px', flexWrap:'wrap' }}>
+                  {latest.sets.map((s, i) => <SetBadge key={i} set={s} compact />)}
+                </div>
+              )}
+            </div>
+            {latest && (() => {
+              const allSets = (ex.sessions || []).flatMap(s => s.sets || []);
+              const best = allSets.reduce((b, s) => s.weight > b.weight ? s : b, allSets[0]);
+              const lastTop = Math.max(...(latest.sets || []).map(s => s.weight));
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:'6px', alignItems:'flex-end', flexShrink:0 }}>
+                  <div style={{ textAlign:'right' }}>
+                    <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>PR</div>
+                    <div style={{ fontSize:'15px', fontWeight:700 }}>{Math.round(best.weight)}lbs</div>
+                  </div>
+                  <div style={{ textAlign:'right' }}>
+                    <div style={{ fontSize:'10px', color:'var(--text3)', textTransform:'uppercase' }}>Last</div>
+                    <div style={{ fontSize:'15px', fontWeight:700 }}>{Math.round(lastTop)}lbs</div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       })}
@@ -2245,6 +2438,7 @@ function SettingsView({ data, onDataChange }) {
 function App() {
   const [data, setData] = useState(null);
   const [currentTab, setCurrentTab] = useState('push');
+  const initialTabSet = useRef(false);
   const [viewStack, setViewStack] = useState([{ view: 'category', params: {} }]);
   const [modal, setModal] = useState(null);
   const [modalParams, setModalParams] = useState({});
@@ -2253,12 +2447,17 @@ function App() {
   const [minimizedWorkout, setMinimizedWorkout] = useState(() => loadDraft());
   const toast = useToast();
 
-  // Init data
+  // Init data and auto-select the next category tab
   useEffect(() => {
     (async () => {
       let d = loadData();
       if (!d) d = await initSeedData();
       setData(d);
+      if (!initialTabSet.current) {
+        initialTabSet.current = true;
+        const next = getNextCategory(d);
+        setCurrentTab(next);
+      }
     })();
   }, []);
 
@@ -2626,6 +2825,15 @@ function App() {
             onNavigateDetail={(catId, exId) => navigate('detail', { catId, exId })}
             onAdd={() => setModal('addExercise')}
             onArchived={() => setModal('archived')}
+            onReorder={(fromIdx, toIdx) => {
+              const newData = JSON.parse(JSON.stringify(data));
+              const active = (newData[currentTab]?.exercises || []).filter(e => e.active !== false);
+              const archived = (newData[currentTab]?.exercises || []).filter(e => e.active === false);
+              const item = active.splice(fromIdx, 1)[0];
+              active.splice(toIdx, 0, item);
+              newData[currentTab].exercises = [...active, ...archived];
+              updateData(newData);
+            }}
           />
         )}
         {currentView.view === 'detail' && (
@@ -2643,7 +2851,7 @@ function App() {
       </div>
 
       {/* Tab Bar */}
-      <TabBar currentTab={currentTab} onSwitchTab={switchTab} activeWorkoutCatId={minimizedWorkout ? minimizedWorkout.catId : null} />
+      <TabBar currentTab={currentTab} onSwitchTab={switchTab} activeWorkoutCatId={minimizedWorkout ? minimizedWorkout.catId : null} suggestedCatId={data ? getNextCategory(data) : null} />
 
       {/* Modals */}
       {modal === 'workout' && (
