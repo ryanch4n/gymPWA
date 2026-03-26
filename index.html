@@ -912,7 +912,13 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
               <span style={{ fontSize:'13px', fontWeight:600, color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{elapsed}</span>
             </div>
           )}
-          <h2 style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Edit' : cat.name} Workout</h2>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+            <h2 style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Edit' : cat.name} Workout</h2>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{
+              fontSize:'12px', color:'var(--text2)', background:'transparent', border:'none',
+              textAlign:'center', padding:'2px 0 0', margin:0
+            }} />
+          </div>
           {isEdit ? (
             <div style={{ minWidth:'36px', display:'flex', justifyContent:'flex-end' }}>
               {hasChanges && (
@@ -973,12 +979,6 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
         </div>
         {!isEdit && <RestTimerBar />}
         <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', padding:'16px', paddingBottom:'var(--safe-bottom)' }}>
-          {/* Date */}
-          <div style={{ display:'flex', alignItems:'center', gap:'10px', paddingBottom:'8px' }}>
-            <label style={{ fontSize:'15px', fontWeight:500, whiteSpace:'nowrap' }}>Date</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ flex:1 }} />
-          </div>
-
           {/* Exercise sections */}
           {exStates.map((ex, ei) => (
             <div key={ex.id} style={{ marginBottom:'16px', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--card-border)' }}>
@@ -1107,14 +1107,14 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
       {historyExId && (() => {
         const histEx = getExercise(data, catId, historyExId);
         if (!histEx) return null;
-        const histSessions = [...(histEx.sessions || [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
+        const histSessions = [...(histEx.sessions || [])].sort((a, b) => b.date.localeCompare(a.date));
         return (
           <div className="fade-in" onClick={() => setHistoryExId(null)} style={{
             position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200,
             display:'flex', alignItems:'flex-end', justifyContent:'center'
           }}>
             <div onClick={e => e.stopPropagation()} className="modal-enter" style={{
-              width:'100%', maxHeight:'75vh', background:'var(--card)',
+              width:'100%', height:'calc(100dvh - var(--safe-top) - 40px)', background:'var(--card)',
               borderRadius:'16px 16px 0 0', border:'1px solid var(--card-border)',
               boxShadow:'var(--shadow-lg)', display:'flex', flexDirection:'column',
               paddingBottom:'var(--safe-bottom)'
@@ -1128,53 +1128,60 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                   <Icon name="x" size={20} />
                 </button>
               </div>
-              <div style={{ flex:1, overflowY:'auto', padding:'12px 16px' }}>
-                {histSessions.length === 0 ? (
-                  <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text3)', fontSize:'14px' }}>No previous sessions</div>
-                ) : histSessions.map((s, idx) => {
-                  const prevS = idx < histSessions.length - 1 ? histSessions[idx + 1] : null;
-                  return (
-                    <div key={idx} style={{
-                      background:'var(--bg2)', borderRadius:'10px', padding:'12px', marginBottom:'8px'
-                    }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
-                        <span style={{ fontSize:'15px', fontWeight:600 }}>{formatDate(s.date)}</span>
-                        {prevS && (() => {
-                          const currSets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
-                          const prevSets = (prevS.sets || []).filter(set => set.weight > 0 && set.reps > 0);
-                          if (currSets.length === 0 || prevSets.length === 0) return null;
-                          const currE1rm = Math.max(...currSets.map(set => set.weight * (1 + set.reps / 30)));
-                          const prevE1rm = Math.max(...prevSets.map(set => set.weight * (1 + set.reps / 30)));
-                          const pct = ((currE1rm - prevE1rm) / prevE1rm * 100);
-                          const rounded = Math.round(Math.abs(pct));
-                          if (rounded === 0) return null;
-                          return (
-                            <span style={{ fontSize:'11px', fontWeight:600, color: pct >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                              {pct >= 0 ? '▲' : '▼'}{rounded}% e1RM
-                            </span>
-                          );
-                        })()}
-                      </div>
-                      {s.note && <div style={{ fontSize:'13px', color:'var(--text2)', marginBottom:'6px' }}>{s.note}</div>}
-                      {(s.sets || []).map((set, i) => (
-                        <div key={i} style={{
-                          display:'flex', alignItems:'center', padding:'3px 0', fontSize:'13px'
-                        }}>
-                          <span style={{ color:'var(--text3)', width:'44px' }}>Set {i+1}</span>
-                          <span style={{ fontWeight:600, width:'70px' }}>{Math.round(set.weight)}lbs</span>
-                          <span style={{ width:'60px' }}>&times; {set.reps} reps</span>
-                          <span style={{ display:'flex', alignItems:'center', gap:'4px' }}>
-                            <span style={{
-                              width:'8px', height:'8px', borderRadius:'50%',
-                              background: EFFORT_COLORS[set.effort] || '#636366'
-                            }} />
-                            <span style={{ fontSize:'11px', color:'var(--text3)' }}>{EFFORT_LABELS[set.effort] || ''}</span>
-                          </span>
+              <div style={{ flex:1, overflowY:'auto' }}>
+                {/* Chart section */}
+                {histEx.sessions && histEx.sessions.length >= 2 && (
+                  <CombinedChart sessions={histEx.sessions} />
+                )}
+                {/* Session history */}
+                <div style={{ padding:'12px 16px' }}>
+                  {histSessions.length === 0 ? (
+                    <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text3)', fontSize:'14px' }}>No previous sessions</div>
+                  ) : histSessions.map((s, idx) => {
+                    const prevS = idx < histSessions.length - 1 ? histSessions[idx + 1] : null;
+                    return (
+                      <div key={idx} style={{
+                        background:'var(--bg2)', borderRadius:'10px', padding:'12px', marginBottom:'8px'
+                      }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
+                          <span style={{ fontSize:'15px', fontWeight:600 }}>{formatDate(s.date)}</span>
+                          {prevS && (() => {
+                            const currSets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
+                            const prevSets = (prevS.sets || []).filter(set => set.weight > 0 && set.reps > 0);
+                            if (currSets.length === 0 || prevSets.length === 0) return null;
+                            const currE1rm = Math.max(...currSets.map(set => set.weight * (1 + set.reps / 30)));
+                            const prevE1rm = Math.max(...prevSets.map(set => set.weight * (1 + set.reps / 30)));
+                            const pct = ((currE1rm - prevE1rm) / prevE1rm * 100);
+                            const rounded = Math.round(Math.abs(pct));
+                            if (rounded === 0) return null;
+                            return (
+                              <span style={{ fontSize:'11px', fontWeight:600, color: pct >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                                {pct >= 0 ? '▲' : '▼'}{rounded}% e1RM
+                              </span>
+                            );
+                          })()}
                         </div>
-                      ))}
-                    </div>
-                  );
-                })}
+                        {s.note && <div style={{ fontSize:'13px', color:'var(--text2)', marginBottom:'6px' }}>{s.note}</div>}
+                        {(s.sets || []).map((set, i) => (
+                          <div key={i} style={{
+                            display:'flex', alignItems:'center', padding:'3px 0', fontSize:'13px'
+                          }}>
+                            <span style={{ color:'var(--text3)', width:'44px' }}>Set {i+1}</span>
+                            <span style={{ fontWeight:600, width:'70px' }}>{Math.round(set.weight)}lbs</span>
+                            <span style={{ width:'60px' }}>&times; {set.reps} reps</span>
+                            <span style={{ display:'flex', alignItems:'center', gap:'4px' }}>
+                              <span style={{
+                                width:'8px', height:'8px', borderRadius:'50%',
+                                background: EFFORT_COLORS[set.effort] || '#636366'
+                              }} />
+                              <span style={{ fontSize:'11px', color:'var(--text3)' }}>{EFFORT_LABELS[set.effort] || ''}</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -1371,15 +1378,90 @@ function ArchivedModal({ catId, data, onRestore, onDelete, onClose }) {
 }
 
 // --- Category View ---
-function CategoryView({ catId, data, onNavigateDetail }) {
+function CategoryView({ catId, data, onEditSession }) {
   const exercises = getActiveExercises(data, catId);
 
-  if (exercises.length === 0) {
-    return <EmptyState iconName="dumbbell" title="No exercises yet" subtitle="Tap + to add your first exercise" />;
+  // Build list of workouts grouped by date across all exercises
+  const dateMap = {};
+  exercises.forEach(ex => {
+    (ex.sessions || []).forEach(s => {
+      if (!dateMap[s.date]) dateMap[s.date] = [];
+      dateMap[s.date].push({
+        exId: ex.id,
+        name: ex.name,
+        repRange: ex.repRange,
+        sets: s.sets || [],
+        note: s.note || ''
+      });
+    });
+  });
+
+  const sortedDates = Object.keys(dateMap).sort((a, b) => b.localeCompare(a));
+
+  if (sortedDates.length === 0) {
+    return <EmptyState iconName="dumbbell" title="No workouts yet" subtitle="Tap the play button to start your first workout" />;
   }
+
+  // Pre-compute volume per date for trend arrows
+  const volumes = {};
+  sortedDates.forEach(date => {
+    volumes[date] = dateMap[date].reduce((sum, ex) =>
+      sum + ex.sets.reduce((s, set) => s + set.weight * set.reps, 0), 0);
+  });
 
   return (
     <div>
+      {sortedDates.map((date, idx) => {
+        const workout = dateMap[date];
+        const totalSets = workout.reduce((sum, ex) => sum + ex.sets.length, 0);
+        const vol = volumes[date];
+        const prevDate = sortedDates[idx + 1];
+        const prevVol = prevDate ? volumes[prevDate] : null;
+        const pctChange = prevVol != null && prevVol > 0 ? ((vol - prevVol) / prevVol) * 100 : null;
+        return (
+          <div key={date} style={{ borderBottom:'1px solid var(--bg3)' }}>
+            <button onClick={() => onEditSession(catId, workout[0].exId, date)} style={{
+              display:'block', width:'100%', textAlign:'left', padding:'14px 16px'
+            }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:'16px', fontWeight:600 }}>{formatDate(date)}</div>
+                  <div style={{ fontSize:'13px', color:'var(--text3)', marginTop:'3px' }}>
+                    {workout.length} exercise{workout.length !== 1 ? 's' : ''} · {totalSets} set{totalSets !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0, marginLeft:'12px' }}>
+                  {pctChange != null && Math.round(pctChange) !== 0 && (
+                    <div style={{
+                      fontSize:'14px', fontWeight:600,
+                      color: pctChange > 0 ? 'var(--green)' : 'var(--red)',
+                      display:'flex', alignItems:'center', gap:'2px'
+                    }}>
+                      <span style={{ fontSize:'9px' }}>{pctChange > 0 ? '\u25B2' : '\u25BC'}</span>
+                      {Math.abs(Math.round(pctChange))}%
+                    </div>
+                  )}
+                  <Icon name="chevron-right" size={18} style={{ color:'var(--text3)' }} />
+                </div>
+              </div>
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// --- Exercise List View (manage exercises) ---
+function ExerciseListView({ catId, data, onNavigateDetail, onAdd, onArchived }) {
+  const exercises = getActiveExercises(data, catId);
+  const archivedCount = getArchivedExercises(data, catId).length;
+
+  return (
+    <div>
+      {exercises.length === 0 && (
+        <EmptyState iconName="dumbbell" title="No exercises yet" subtitle="Tap + to add your first exercise" />
+      )}
       {exercises.map(ex => {
         const latest = getLatestSession(ex);
         return (
@@ -1426,6 +1508,16 @@ function CategoryView({ catId, data, onNavigateDetail }) {
           </div>
         );
       })}
+      {archivedCount > 0 && (
+        <div style={{ padding:'16px', textAlign:'center' }}>
+          <button onClick={onArchived} style={{
+            fontSize:'14px', color:'var(--blue)', fontWeight:500,
+            display:'inline-flex', alignItems:'center', gap:'6px'
+          }}>
+            <Icon name="archive" size={16} /> {archivedCount} archived exercise{archivedCount !== 1 ? 's' : ''}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2395,15 +2487,21 @@ function App() {
 
   let headerTitle = '';
   let showBack = viewStack.length > 1;
-  let showArchiveBtn = false;
   let showAddBtn = false;
   let showEditBtn = false;
+
+  let showExercisesBtn = false;
+  let showAddExBtn = false;
 
   if (currentView.view === 'category') {
     const cat = CATEGORIES.find(c => c.id === currentTab);
     headerTitle = cat ? cat.name : '';
-    showArchiveBtn = getArchivedExercises(data, currentTab).length > 0;
+    showExercisesBtn = true;
     showAddBtn = true;
+  } else if (currentView.view === 'exercises') {
+    const cat = CATEGORIES.find(c => c.id === currentTab);
+    headerTitle = cat ? cat.name + ' Exercises' : 'Exercises';
+    showAddExBtn = true;
   } else if (currentView.view === 'detail') {
     const ex = getExercise(data, currentView.params.catId, currentView.params.exId);
     headerTitle = ex ? ex.name : 'Exercise';
@@ -2476,12 +2574,12 @@ function App() {
                 <button onClick={handleSaveName} style={{ padding:'6px', color:'var(--blue)', fontSize:'14px', fontWeight:600 }}>Save</button>
               </>
             )}
-            {showArchiveBtn && (
-              <button onClick={() => setModal('archived')} style={{ padding:'6px', color:'var(--blue)' }}>
-                <Icon name="archive" size={22} />
+            {showExercisesBtn && (
+              <button onClick={() => navigate('exercises', {})} style={{ padding:'6px', color:'var(--text2)' }}>
+                <Icon name="edit" size={20} />
               </button>
             )}
-            {showAddBtn && (
+            {showAddExBtn && (
               <button onClick={() => setModal('addExercise')} style={{ padding:'6px', color:'var(--blue)' }}>
                 <Icon name="plus" size={22} />
               </button>
@@ -2518,7 +2616,16 @@ function App() {
           <CategoryView
             catId={currentTab}
             data={data}
+            onEditSession={handleEditSession}
+          />
+        )}
+        {currentView.view === 'exercises' && (
+          <ExerciseListView
+            catId={currentTab}
+            data={data}
             onNavigateDetail={(catId, exId) => navigate('detail', { catId, exId })}
+            onAdd={() => setModal('addExercise')}
+            onArchived={() => setModal('archived')}
           />
         )}
         {currentView.view === 'detail' && (
