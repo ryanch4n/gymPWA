@@ -98,6 +98,7 @@ const { useState, useEffect, useRef, useCallback, createContext, useContext, use
 
 // ==================== CONSTANTS ====================
 const DB_KEY = 'gym_data';
+const DRAFT_KEY = 'gym_workout_draft';
 const CATEGORIES = [
   { id:'push', name:'Push', iconName:'chevrons-up' },
   { id:'pull', name:'Pull', iconName:'chevrons-down' },
@@ -228,6 +229,19 @@ function loadData() {
 function saveData(data) {
   data._lastSaved = todayStr();
   localStorage.setItem(DB_KEY, JSON.stringify(data));
+}
+
+function saveDraft(draft) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch(e) {}
+}
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
 }
 
 async function initSeedData() {
@@ -731,6 +745,24 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
     return () => clearInterval(id);
   }, [startTime]);
 
+  // Auto-copy coach prompt to clipboard on new workout start
+  useEffect(() => {
+    if (isEdit || resumeState) return; // Only for fresh workouts
+    const prompt = buildCoachPrompt();
+    navigator.clipboard.writeText(prompt).then(() => {
+      toast('Coach prompt copied to clipboard');
+    }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save draft to localStorage whenever workout state changes
+  useEffect(() => {
+    if (isEdit) return; // Don't auto-save when editing past sessions
+    const timer = setTimeout(() => {
+      saveDraft({ catId, date, exStates, startTime });
+    }, 300); // small debounce
+    return () => clearTimeout(timer);
+  }, [exStates, date, catId, startTime, isEdit]);
+
   // Track initial state for edit mode change detection
   const initialSnapshot = useRef(null);
   if (initialSnapshot.current === null && isEdit) {
@@ -797,9 +829,11 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
     }
   };
 
-  const handleCoachPrompt = () => {
+  const buildCoachPrompt = () => {
     const catExercises = getActiveExercises(data, catId);
     const lines = [`I'm doing a ${cat.name} workout today (${date}).`];
+    lines.push('');
+    lines.push('Effort scale: Clean = felt easy/controlled, Hard = challenging but completed, Very Hard = near failure/grind.');
     lines.push('');
     lines.push('Here\'s my recent history for each exercise:');
     lines.push('');
@@ -810,7 +844,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
         lines.push('  No previous sessions.');
       } else {
         sessions.forEach(s => {
-          const setsStr = (s.sets || []).map(set => `${set.weight}lbs×${set.reps}`).join(', ');
+          const setsStr = (s.sets || []).map(set => `${set.weight}lbs×${set.reps} [${EFFORT_LABELS[set.effort || 0]}]`).join(', ');
           lines.push(`  ${s.date}: ${setsStr}`);
         });
       }
@@ -822,21 +856,26 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
     if (currentLines.length > 0) {
       lines.push('What I\'ve logged so far today:');
       currentLines.forEach(ex => {
-        const setsStr = ex.sets.filter(s => s.weight > 0 || s.reps > 0).map(s => `${s.weight}lbs×${s.reps} (${EFFORT_LABELS[s.effort]})`).join(', ');
+        const setsStr = ex.sets.filter(s => s.weight > 0 || s.reps > 0).map(s => `${s.weight}lbs×${s.reps} [${EFFORT_LABELS[s.effort]}]`).join(', ');
         lines.push(`  ${ex.name}: ${setsStr}`);
       });
       lines.push('');
     }
 
-    lines.push('Based on my history and today\'s workout, give me specific coaching advice:');
-    lines.push('- Should I increase weight or reps on any exercise? By how much?');
+    lines.push('Based on my history, effort levels, and today\'s workout, give me specific coaching advice:');
+    lines.push('- Should I increase weight or reps on any exercise? By how much? Factor in effort — if my last session was "Hard" or "Very Hard", I may not be ready to go up.');
     lines.push('- Am I progressing well or plateauing anywhere?');
     lines.push('- Any form or programming tips for my weaker lifts?');
+    lines.push('- Recommend specific rest times between sets for each exercise (e.g. 90s, 2min, 3min) based on the weight/effort involved.');
     lines.push('- What should I focus on for my next session?');
     lines.push('');
-    lines.push('Keep it concise and actionable.');
+    lines.push('Always include rest time recommendations for every exercise. Keep it concise and actionable.');
 
-    setCoachPrompt(lines.join('\n'));
+    return lines.join('\n');
+  };
+
+  const handleCoachPrompt = () => {
+    setCoachPrompt(buildCoachPrompt());
   };
 
   return (
@@ -2094,6 +2133,7 @@ function SettingsView({ data, onDataChange }) {
                 const fresh = {};
                 CATEGORIES.forEach(c => { fresh[c.id] = { exercises: [] }; });
                 localStorage.setItem(DB_KEY, JSON.stringify(fresh));
+                clearDraft();
                 onDataChange(fresh);
                 setShowResetConfirm(false);
                 toast('All data has been reset');
@@ -2118,7 +2158,7 @@ function App() {
   const [modalParams, setModalParams] = useState({});
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
-  const [minimizedWorkout, setMinimizedWorkout] = useState(null);
+  const [minimizedWorkout, setMinimizedWorkout] = useState(() => loadDraft());
   const toast = useToast();
 
   // Init data
@@ -2213,6 +2253,7 @@ function App() {
     // (editing a past session should never touch the active workout)
     if (!modalParams?.editSession) {
       setMinimizedWorkout(null);
+      clearDraft();
     }
     setModal(null);
   };
@@ -2242,6 +2283,7 @@ function App() {
     // Only clear minimized workout if this was an active workout, not an edit
     if (!modalParams?.editSession) {
       setMinimizedWorkout(null);
+      clearDraft();
     }
     setModal(null);
   };
