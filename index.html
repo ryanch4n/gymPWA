@@ -462,6 +462,68 @@ function Stepper({ value, onChange, onStep, inputMode = 'decimal' }) {
   );
 }
 
+// --- Shared Session History Card ---
+function SessionHistoryCard({ session, prevSession, menuContent }) {
+  const s = session;
+  const prevS = prevSession;
+  // e1RM % change
+  const currSets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
+  const prevSets = prevS ? (prevS.sets || []).filter(set => set.weight > 0 && set.reps > 0) : [];
+  let e1rmBadge = null;
+  if (currSets.length > 0 && prevSets.length > 0) {
+    const currE1rm = Math.max(...currSets.map(set => set.weight * (1 + set.reps / 30)));
+    const prevE1rm = Math.max(...prevSets.map(set => set.weight * (1 + set.reps / 30)));
+    if (prevE1rm > 0) {
+      const pct = ((currE1rm - prevE1rm) / prevE1rm * 100);
+      const rounded = Math.round(Math.abs(pct));
+      if (rounded > 0) {
+        e1rmBadge = (
+          <span style={{ fontSize:'13px', fontWeight:600, color: pct >= 0 ? 'var(--green)' : 'var(--red)' }}>
+            {pct >= 0 ? '▲' : '▼'}{rounded}% e1RM
+          </span>
+        );
+      }
+    }
+  }
+  const maxVol = Math.max(...(s.sets || []).map(st => st.weight * st.reps), 1);
+  return (
+    <div style={{ background:'var(--bg2)', borderRadius:'10px', padding:'14px 16px', marginBottom:'10px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom: s.note ? '4px' : '10px' }}>
+          <span style={{ fontSize:'17px', fontWeight:600 }}>{formatDate(s.date)}</span>
+          {e1rmBadge}
+        </div>
+        {menuContent}
+      </div>
+      {s.note && <div style={{ fontSize:'14px', color:'var(--text2)', marginBottom:'8px' }}>{s.note}</div>}
+      {(s.sets || []).map((set, i) => {
+        const vol = set.weight * set.reps;
+        const pct = maxVol > 0 ? (vol / maxVol) * 100 : 0;
+        return (
+          <div key={i} style={{ display:'flex', alignItems:'center', padding:'5px 0', fontSize:'15px' }}>
+            <span style={{ color:'var(--text3)', flexShrink:0, marginRight:'14px' }}>Set {i+1}</span>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:'6px', flexShrink:0, width:'170px' }}>
+              <span style={{ fontWeight:600, width:'60px', textAlign:'right' }}>{Math.round(set.weight)}lbs</span>
+              <span style={{ color:'var(--text3)' }}>&times;</span>
+              <span style={{ width:'58px' }}>{set.reps} reps</span>
+            </span>
+            <span style={{ flex:1, display:'flex', alignItems:'center', gap:'6px', minWidth:0, marginLeft:'14px' }}>
+              <span style={{ flex:1, height:'8px', borderRadius:'4px', background:'var(--bg3)', overflow:'hidden' }}>
+                <span style={{
+                  display:'block', height:'100%', borderRadius:'4px',
+                  width: pct + '%',
+                  background: EFFORT_COLORS[set.effort] || 'var(--blue)',
+                  transition:'width 0.3s ease'
+                }} />
+              </span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // --- Set Editor ---
 function DeltaHint({ current, previous }) {
   if (previous == null || previous === 0 || current === 0) return null;
@@ -763,7 +825,14 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
     return exercises.map(ex => {
       let sets;
       let note = '';
-      const latest = getLatestSession(ex);
+      let latest;
+      if (editSession) {
+        // When editing, find the session before the one being edited so percent changes are meaningful
+        const sorted = [...(ex.sessions || [])].sort((a, b) => b.date.localeCompare(a.date));
+        latest = sorted.find(s => s.date < editSession.date) || null;
+      } else {
+        latest = getLatestSession(ex);
+      }
       const lastSets = latest && latest.sets.length > 0 ? latest.sets : null;
       if (editSession) {
         const editEx = editSession.exercises.find(e => e.id === ex.id);
@@ -780,7 +849,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
           sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
         }
       }
-      return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: !isEdit, lastSets, note };
+      return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: isEdit, lastSets, note };
     });
   }
   );
@@ -976,7 +1045,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
             </div>
           )}
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
-            <h2 style={{ fontSize:'17px', fontWeight:600 }}>{isEdit ? 'Edit' : cat.name} Workout</h2>
+            <h2 style={{ fontSize:'17px', fontWeight:600 }}>{cat.name} Workout</h2>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{
               fontSize:'12px', color:'var(--text2)', background:'transparent', border:'none',
               textAlign:'center', padding:'2px 0 0', margin:0
@@ -1042,6 +1111,56 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
         </div>
         {!isEdit && <RestTimerBar />}
         <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', padding:'16px', paddingBottom:'var(--safe-bottom)' }}>
+          {/* e1RM progress widget for historical workouts */}
+          {isEdit && exStates.length > 0 && (() => {
+            const items = exStates.map(ex => {
+              const curr = ex.sets.filter(s => s.weight > 0 && s.reps > 0);
+              const prev = (ex.lastSets || []).filter(s => s.weight > 0 && s.reps > 0);
+              if (curr.length === 0) return null;
+              const currE1rm = Math.max(...curr.map(s => s.weight * (1 + s.reps / 30)));
+              const prevE1rm = prev.length > 0 ? Math.max(...prev.map(s => s.weight * (1 + s.reps / 30))) : null;
+              const pct = prevE1rm && prevE1rm > 0 ? ((currE1rm - prevE1rm) / prevE1rm * 100) : null;
+              return { name: ex.name, currE1rm, prevE1rm, pct };
+            }).filter(Boolean);
+            if (items.length === 0) return null;
+            const maxE1rm = Math.max(...items.map(it => Math.max(it.currE1rm, it.prevE1rm || 0)));
+            return (
+              <div style={{
+                marginBottom:'16px', borderRadius:'var(--radius)', overflow:'hidden',
+                border:'1px solid var(--card-border)', background:'var(--bg2)', padding:'14px'
+              }}>
+                <div style={{ fontSize:'13px', fontWeight:600, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px', marginBottom:'12px' }}>Session Progress</div>
+                {items.map((it, i) => {
+                  const currW = maxE1rm > 0 ? (it.currE1rm / maxE1rm * 100) : 0;
+                  const prevW = it.prevE1rm && maxE1rm > 0 ? (it.prevE1rm / maxE1rm * 100) : 0;
+                  const barColor = it.pct == null ? 'var(--blue)' : it.pct >= 0 ? 'var(--green)' : 'var(--red)';
+                  return (
+                    <div key={i} style={{ marginBottom: i < items.length - 1 ? '10px' : 0 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
+                        <span style={{ fontSize:'13px', fontWeight:500 }}>{it.name}</span>
+                        <span style={{ fontSize:'12px', fontWeight:600, color: barColor }}>
+                          {it.pct != null ? `${it.pct >= 0 ? '▲' : '▼'}${Math.round(Math.abs(it.pct))}%` : 'New'}
+                        </span>
+                      </div>
+                      <div style={{ position:'relative', height:'6px', borderRadius:'3px', background:'var(--bg3)' }}>
+                        <div style={{
+                          position:'absolute', height:'100%', borderRadius:'3px',
+                          width: currW + '%', background: barColor, transition:'width 0.3s ease'
+                        }} />
+                        {it.prevE1rm && prevW > 0 && (
+                          <div style={{
+                            position:'absolute', top:'-3px', height:'12px', width:'2px',
+                            left: prevW + '%', marginLeft:'-1px',
+                            background:'var(--text)', borderRadius:'1px', opacity: 0.6
+                          }} />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
           {/* Exercise sections */}
           {exStates.map((ex, ei) => (
             <div key={ex.id} style={{ marginBottom:'16px', borderRadius:'var(--radius)', overflow:'hidden', border:'1px solid var(--card-border)' }}>
@@ -1193,66 +1312,13 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                 <div style={{ padding:'12px 16px' }}>
                   {histSessions.length === 0 ? (
                     <div style={{ textAlign:'center', padding:'24px 0', color:'var(--text3)', fontSize:'14px' }}>No previous sessions</div>
-                  ) : histSessions.map((s, idx) => {
-                    const prevS = idx < histSessions.length - 1 ? histSessions[idx + 1] : null;
-                    return (
-                      <div key={idx} style={{
-                        background:'var(--bg2)', borderRadius:'10px', padding:'14px 16px', marginBottom:'10px'
-                      }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
-                          <span style={{ fontSize:'17px', fontWeight:600 }}>{formatDate(s.date)}</span>
-                          {prevS && (() => {
-                            const currSets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
-                            const prevSets = (prevS.sets || []).filter(set => set.weight > 0 && set.reps > 0);
-                            if (currSets.length === 0 || prevSets.length === 0) return null;
-                            const currE1rm = Math.max(...currSets.map(set => set.weight * (1 + set.reps / 30)));
-                            const prevE1rm = Math.max(...prevSets.map(set => set.weight * (1 + set.reps / 30)));
-                            const pct = ((currE1rm - prevE1rm) / prevE1rm * 100);
-                            const rounded = Math.round(Math.abs(pct));
-                            if (rounded === 0) return null;
-                            return (
-                              <span style={{ fontSize:'13px', fontWeight:600, color: pct >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                                {pct >= 0 ? '▲' : '▼'}{rounded}% e1RM
-                              </span>
-                            );
-                          })()}
-                        </div>
-                        {s.note && <div style={{ fontSize:'14px', color:'var(--text2)', marginBottom:'8px' }}>{s.note}</div>}
-                        {(() => {
-                          const maxVol = Math.max(...(s.sets || []).map(st => st.weight * st.reps), 1);
-                          return (s.sets || []).map((set, i) => {
-                            const vol = set.weight * set.reps;
-                            const pct = maxVol > 0 ? (vol / maxVol) * 100 : 0;
-                            return (
-                              <div key={i} style={{
-                                display:'flex', alignItems:'center', padding:'5px 0', fontSize:'15px'
-                              }}>
-                                <span style={{ color:'var(--text3)', flexShrink:0, marginRight:'14px' }}>Set {i+1}</span>
-                                <span style={{ display:'inline-flex', alignItems:'center', gap:'6px', flexShrink:0, width:'170px' }}>
-                                  <span style={{ fontWeight:600, width:'60px', textAlign:'right' }}>{Math.round(set.weight)}lbs</span>
-                                  <span style={{ color:'var(--text3)' }}>&times;</span>
-                                  <span style={{ width:'58px' }}>{set.reps} reps</span>
-                                </span>
-                                <span style={{ flex:1, display:'flex', alignItems:'center', gap:'6px', minWidth:0, marginLeft:'14px' }}>
-                                  <span style={{
-                                    flex:1, height:'8px', borderRadius:'4px',
-                                    background:'var(--bg3)', overflow:'hidden'
-                                  }}>
-                                    <span style={{
-                                      display:'block', height:'100%', borderRadius:'4px',
-                                      width: pct + '%',
-                                      background: EFFORT_COLORS[set.effort] || 'var(--blue)',
-                                      transition:'width 0.3s ease'
-                                    }} />
-                                  </span>
-                                </span>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
-                    );
-                  })}
+                  ) : histSessions.map((s, idx) => (
+                    <SessionHistoryCard
+                      key={idx}
+                      session={s}
+                      prevSession={idx < histSessions.length - 1 ? histSessions[idx + 1] : null}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -1474,47 +1540,68 @@ function CategoryView({ catId, data, onEditSession }) {
     return <EmptyState iconName="dumbbell" title="No workouts yet" subtitle="Tap the play button to start your first workout" />;
   }
 
-  // Pre-compute volume per date for trend arrows
-  const volumes = {};
+  // Pre-compute avg e1RM per date for trend arrows and bars
+  const e1rms = {};
   sortedDates.forEach(date => {
-    volumes[date] = dateMap[date].reduce((sum, ex) =>
-      sum + ex.sets.reduce((s, set) => s + set.weight * set.reps, 0), 0);
+    const exE1rms = dateMap[date].map(ex => {
+      const valid = ex.sets.filter(s => s.weight > 0 && s.reps > 0);
+      return valid.length > 0 ? Math.max(...valid.map(s => s.weight * (1 + s.reps / 30))) : 0;
+    }).filter(v => v > 0);
+    e1rms[date] = exE1rms.length > 0 ? exE1rms.reduce((a, b) => a + b, 0) / exE1rms.length : 0;
   });
+  const maxE1rm = Math.max(...Object.values(e1rms), 1);
 
   return (
     <div>
       {sortedDates.map((date, idx) => {
         const workout = dateMap[date];
         const totalSets = workout.reduce((sum, ex) => sum + ex.sets.length, 0);
-        const vol = volumes[date];
+        const vol = e1rms[date];
         const prevDate = sortedDates[idx + 1];
-        const prevVol = prevDate ? volumes[prevDate] : null;
+        const prevVol = prevDate ? e1rms[prevDate] : null;
         const pctChange = prevVol != null && prevVol > 0 ? ((vol - prevVol) / prevVol) * 100 : null;
         return (
           <div key={date} style={{ borderBottom:'1px solid var(--bg3)' }}>
             <button onClick={() => onEditSession(catId, workout[0].exId, date)} style={{
               display:'block', width:'100%', textAlign:'left', padding:'14px 16px'
             }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:'16px', fontWeight:600 }}>{formatDate(date)}</div>
-                  <div style={{ fontSize:'13px', color:'var(--text3)', marginTop:'3px' }}>
+                  <div style={{ fontSize:'13px', color:'var(--text3)', marginTop:'2px' }}>
                     {workout.length} exercise{workout.length !== 1 ? 's' : ''} · {totalSets} set{totalSets !== 1 ? 's' : ''}
                   </div>
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0, marginLeft:'12px' }}>
-                  {pctChange != null && Math.round(pctChange) !== 0 && (
-                    <div style={{
-                      fontSize:'14px', fontWeight:600,
-                      color: pctChange > 0 ? 'var(--green)' : 'var(--red)',
-                      display:'flex', alignItems:'center', gap:'2px'
-                    }}>
-                      <span style={{ fontSize:'9px' }}>{pctChange > 0 ? '\u25B2' : '\u25BC'}</span>
-                      {Math.abs(Math.round(pctChange))}%
+                {(() => {
+                  if (pctChange == null) return null;
+                  const rounded = Math.round(pctChange);
+                  if (rounded === 0) return null;
+                  // Diverging bar: center line = 0%, extends right (green) or left (red)
+                  const maxPct = 5; // clamp at ±5% so small changes are visible
+                  const clamped = Math.max(-maxPct, Math.min(maxPct, pctChange));
+                  const barW = (Math.abs(clamped) / maxPct) * 50; // max 50% of the container
+                  const isUp = clamped >= 0;
+                  return (
+                    <div style={{ display:'flex', alignItems:'center', gap:'6px', flexShrink:0 }}>
+                      <div style={{ position:'relative', width:'80px', height:'16px' }}>
+                        {/* center line */}
+                        <div style={{ position:'absolute', left:'50%', top:0, width:'1px', height:'100%', background:'var(--text3)', opacity:0.4 }} />
+                        {/* bar */}
+                        <div style={{
+                          position:'absolute', top:'3px', height:'8px', borderRadius:'2px',
+                          background: isUp ? 'var(--green)' : 'var(--red)',
+                          ...(isUp
+                            ? { left:'50%', width: barW + '%' }
+                            : { right:'50%', width: barW + '%' })
+                        }} />
+                      </div>
+                      <span style={{ fontSize:'13px', fontWeight:600, color: isUp ? 'var(--green)' : 'var(--red)', minWidth:'32px', textAlign:'right' }}>
+                        {isUp ? '+' : ''}{rounded}%
+                      </span>
                     </div>
-                  )}
-                  <Icon name="chevron-right" size={18} style={{ color:'var(--text3)' }} />
-                </div>
+                  );
+                })()}
+                <Icon name="chevron-right" size={18} style={{ color:'var(--text3)', flexShrink:0 }} />
               </div>
             </button>
           </div>
@@ -2015,7 +2102,6 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
 
   // Compute stats
   const allSetsWithDate = sessions.flatMap(s => (s.sets || []).map(set => ({ ...set, date: s.date })));
-  const allSets = sessions.flatMap(s => s.sets || []);
   const bestSingle = allSetsWithDate.length > 0
     ? allSetsWithDate.reduce((best, s) => (s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) ? s : best, allSetsWithDate[0])
     : null;
@@ -2025,14 +2111,6 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
         return e1rm > best.e1rm ? { e1rm, date: s.date } : best;
       }, { e1rm: 0, date: null })
     : { e1rm: 0, date: null };
-
-  // Compute best e1RM per session for history display
-  const sessionE1rms = sessions.map(s => {
-    const sets = (s.sets || []).filter(set => set.weight > 0 && set.reps > 0);
-    return sets.length > 0 ? Math.max(...sets.map(set => set.weight * (1 + set.reps / 30))) : 0;
-  });
-
-  const formatWeight = (w) => Math.round(w).toLocaleString();
 
   return (
     <div className="slide-in">
@@ -2057,97 +2135,49 @@ function ExerciseDetailView({ catId, exId, data, onDeleteSession, onEditSession 
 
       {sessions.length === 0 ? (
         <EmptyState iconName="calendar" title="No workouts logged yet" subtitle="Start a new workout from the main screen" />
-      ) : sessions.map((s, idx) => {
-        const prevSession = idx < sessions.length - 1 ? sessions[idx + 1] : null;
-        const currE1rm = sessionE1rms[idx];
-        const prevE1rm = idx < sessions.length - 1 ? sessionE1rms[idx + 1] : 0;
-        const e1rmDiff = prevE1rm > 0 ? ((currE1rm - prevE1rm) / prevE1rm * 100) : 0;
-        const e1rmRounded = Math.round(Math.abs(e1rmDiff));
-        return (
-        <div key={idx} style={{
-          background:'var(--bg2)', borderRadius:'12px', padding:'14px', margin:'8px 16px'
-        }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start', position:'relative' }}>
-            <div>
-              <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                <span style={{ fontSize:'16px', fontWeight:600 }}>{formatDate(s.date)}</span>
-                {prevE1rm > 0 && e1rmRounded > 0 && (
-                  <span style={{ fontSize:'11px', fontWeight:600, color: e1rmDiff >= 0 ? 'var(--green)' : 'var(--red)', display:'inline-flex', alignItems:'center', gap:'2px' }}>
-                    {e1rmDiff >= 0 ? '▲' : '▼'}{e1rmRounded}% e1RM
-                  </span>
-                )}
-              </div>
-              {s.note && <div style={{ fontSize:'14px', color:'var(--text2)', marginTop:'2px' }}>{s.note}</div>}
-            </div>
-            <button onClick={() => setOpenMenu(openMenu === idx ? null : idx)} style={{ color:'var(--text3)', padding:'4px' }}>
-              <Icon name="ellipsis-vertical" size={16} />
-            </button>
-            {openMenu === idx && (
-              <>
-                <div onClick={() => setOpenMenu(null)} style={{ position:'fixed', inset:0, zIndex:50 }} />
-                <div style={{
-                  position:'absolute', top:'100%', right:0, zIndex:51,
-                  background:'var(--bg3)', borderRadius:'10px', overflow:'hidden',
-                  boxShadow:'0 4px 20px rgba(0,0,0,0.5)', border:'1px solid var(--bg4)',
-                  minWidth:'160px'
-                }}>
-                  <button onClick={() => { if (onEditSession) onEditSession(catId, exId, s.date); setOpenMenu(null); }} style={{
-                    width:'100%', padding:'12px 16px', textAlign:'left',
-                    fontSize:'15px', color:'var(--text)', display:'flex', alignItems:'center', gap:'10px',
-                    borderBottom:'1px solid var(--bg4)'
-                  }}>
-                    <Icon name="edit" size={16} /> Edit Session
+      ) : (
+        <div style={{ padding:'0 16px' }}>
+          {sessions.map((s, idx) => (
+            <SessionHistoryCard
+              key={idx}
+              session={s}
+              prevSession={idx < sessions.length - 1 ? sessions[idx + 1] : null}
+              menuContent={
+                <div style={{ position:'relative' }}>
+                  <button onClick={() => setOpenMenu(openMenu === idx ? null : idx)} style={{ color:'var(--text3)', padding:'4px' }}>
+                    <Icon name="ellipsis-vertical" size={16} />
                   </button>
-                  <button onClick={() => { onDeleteSession(catId, exId, s.date); setOpenMenu(null); }} style={{
-                    width:'100%', padding:'12px 16px', textAlign:'left',
-                    fontSize:'15px', color:'var(--red)', display:'flex', alignItems:'center', gap:'10px'
-                  }}>
-                    <Icon name="trash-2" size={16} /> Delete Session
-                  </button>
+                  {openMenu === idx && (
+                    <>
+                      <div onClick={() => setOpenMenu(null)} style={{ position:'fixed', inset:0, zIndex:50 }} />
+                      <div style={{
+                        position:'absolute', top:'100%', right:0, zIndex:51,
+                        background:'var(--bg3)', borderRadius:'10px', overflow:'hidden',
+                        boxShadow:'0 4px 20px rgba(0,0,0,0.5)', border:'1px solid var(--bg4)',
+                        minWidth:'160px'
+                      }}>
+                        <button onClick={() => { if (onEditSession) onEditSession(catId, exId, s.date); setOpenMenu(null); }} style={{
+                          width:'100%', padding:'12px 16px', textAlign:'left',
+                          fontSize:'15px', color:'var(--text)', display:'flex', alignItems:'center', gap:'10px',
+                          borderBottom:'1px solid var(--bg4)'
+                        }}>
+                          <Icon name="edit" size={16} /> Edit Session
+                        </button>
+                        <button onClick={() => { onDeleteSession(catId, exId, s.date); setOpenMenu(null); }} style={{
+                          width:'100%', padding:'12px 16px', textAlign:'left',
+                          fontSize:'15px', color:'var(--red)', display:'flex', alignItems:'center', gap:'10px'
+                        }}>
+                          <Icon name="trash-2" size={16} /> Delete Session
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
-          <div style={{ marginTop:'10px' }}>
-            {s.sets.map((set, i) => {
-              const prevSet = prevSession && prevSession.sets && prevSession.sets[i] ? prevSession.sets[i] : null;
-              const wDiff = prevSet ? set.weight - prevSet.weight : 0;
-              const rDiff = prevSet ? set.reps - prevSet.reps : 0;
-              return (
-              <div key={i} style={{
-                display:'flex', alignItems:'center', padding:'4px 0', fontSize:'14px'
-              }}>
-                <span style={{ color:'var(--text3)', flex:1, textAlign:'center' }}>Set {i+1}</span>
-                <span style={{ fontWeight:600, flex:1, display:'inline-flex', alignItems:'center', gap:'3px' }}>
-                  {Math.round(set.weight)}lbs
-                  {prevSet && wDiff !== 0 && (
-                    <span style={{ fontSize:'10px', fontWeight:600, color: wDiff > 0 ? 'var(--green)' : 'var(--red)', display:'inline-flex', alignItems:'center', gap:'1px' }}>
-                      <span style={{ fontSize:'8px' }}>{wDiff > 0 ? '\u25B2' : '\u25BC'}</span>{Math.abs(wDiff) % 1 === 0 ? Math.abs(wDiff) : Math.abs(wDiff).toFixed(1)}
-                    </span>
-                  )}
-                </span>
-                <span style={{ flex:1, display:'inline-flex', alignItems:'center', gap:'3px' }}>
-                  &times; {set.reps} reps
-                  {prevSet && rDiff !== 0 && (
-                    <span style={{ fontSize:'10px', fontWeight:600, color: rDiff > 0 ? 'var(--green)' : 'var(--red)', display:'inline-flex', alignItems:'center', gap:'1px' }}>
-                      <span style={{ fontSize:'8px' }}>{rDiff > 0 ? '\u25B2' : '\u25BC'}</span>{Math.abs(rDiff)}
-                    </span>
-                  )}
-                </span>
-                <span style={{ flex:1, display:'flex', alignItems:'center', gap:'6px', paddingLeft:'20px' }}>
-                  <span style={{
-                    width:'10px', height:'10px', borderRadius:'50%', flexShrink:0,
-                    background: EFFORT_COLORS[set.effort] || '#636366'
-                  }} />
-                  <span style={{ fontSize:'12px', color:'var(--text3)' }}>{EFFORT_LABELS[set.effort] || ''}</span>
-                </span>
-              </div>
-              );
-            })}
-          </div>
+              }
+            />
+          ))}
         </div>
-        );
-      })}
+      )}
       <div style={{ height:'80px' }} />
     </div>
   );
