@@ -315,6 +315,131 @@ function getLatestSession(exercise) {
   return [...exercise.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
 }
 
+function getPreviousSessionBefore(exercise, dateStr) {
+  if (!exercise.sessions || !exercise.sessions.length) return null;
+  return [...exercise.sessions]
+    .filter(s => s.date < dateStr)
+    .sort((a, b) => b.date.localeCompare(a.date))[0] || null;
+}
+
+function getValidSets(sets = []) {
+  return (sets || []).filter(set => Number(set.weight) > 0 && Number(set.reps) > 0);
+}
+
+function getSetE1rm(set) {
+  return Number(set.weight) * (1 + Number(set.reps) / 30);
+}
+
+function getSessionMetrics(sets = []) {
+  const valid = getValidSets(sets);
+  const volume = valid.reduce((sum, set) => sum + Number(set.weight) * Number(set.reps), 0);
+  const reps = valid.reduce((sum, set) => sum + Number(set.reps), 0);
+  return {
+    hasData: valid.length > 0,
+    sets: valid.length,
+    reps,
+    volume,
+    bestE1rm: valid.length > 0 ? Math.max(...valid.map(getSetE1rm)) : 0
+  };
+}
+
+function getPctChange(current, previous) {
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous <= 0 || current <= 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
+function getDeltaColor(pct) {
+  if (pct == null || Math.round(Math.abs(pct)) === 0) return 'var(--text3)';
+  return pct >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+function formatDeltaPercent(pct, { arrows = false, suffix = '' } = {}) {
+  if (pct == null || !Number.isFinite(pct)) return '';
+  const rounded = Math.round(Math.abs(pct));
+  if (rounded === 0) return `0%${suffix}`;
+  if (arrows) return `${pct >= 0 ? '▲' : '▼'}${rounded}%${suffix}`;
+  return `${pct >= 0 ? '+' : '-'}${rounded}%${suffix}`;
+}
+
+function formatCompactNumber(value) {
+  if (!Number.isFinite(value)) return '0';
+  const abs = Math.abs(value);
+  if (abs >= 1000000) {
+    return (value / 1000000).toFixed(abs >= 10000000 ? 0 : 1).replace(/\.0$/, '') + 'm';
+  }
+  if (abs >= 1000) {
+    return (value / 1000).toFixed(abs >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k';
+  }
+  return Math.round(value).toLocaleString();
+}
+
+function getExerciseSessionSummary(currentSets, previousSets) {
+  const current = getSessionMetrics(currentSets);
+  const previous = getSessionMetrics(previousSets || []);
+  return {
+    current,
+    previous,
+    volumePct: getPctChange(current.volume, previous.volume),
+    repsPct: getPctChange(current.reps, previous.reps),
+    strengthPct: getPctChange(current.bestE1rm, previous.bestE1rm)
+  };
+}
+
+function buildWorkoutSummary(items) {
+  const summaries = items.map(item => ({
+    ...item,
+    ...getExerciseSessionSummary(item.sets, item.prevSets)
+  })).filter(item => item.current.hasData);
+
+  const totals = summaries.reduce((acc, item) => {
+    acc.exerciseCount += 1;
+    acc.sets += item.current.sets;
+    acc.reps += item.current.reps;
+    acc.volume += item.current.volume;
+    acc.prevSets += item.previous.sets;
+    acc.prevReps += item.previous.reps;
+    acc.prevVolume += item.previous.volume;
+    return acc;
+  }, { exerciseCount: 0, sets: 0, reps: 0, volume: 0, prevSets: 0, prevReps: 0, prevVolume: 0 });
+
+  const strengthDeltas = summaries
+    .map(item => item.strengthPct)
+    .filter(pct => pct != null && Number.isFinite(pct));
+
+  return {
+    items: summaries,
+    totals,
+    volumePct: getPctChange(totals.volume, totals.prevVolume),
+    repsPct: getPctChange(totals.reps, totals.prevReps),
+    strengthPct: strengthDeltas.length > 0
+      ? strengthDeltas.reduce((sum, pct) => sum + pct, 0) / strengthDeltas.length
+      : null,
+    comparableCount: strengthDeltas.length
+  };
+}
+
+function getWorkoutSummaryForDate(exercises, dateStr) {
+  return buildWorkoutSummary(exercises.map(ex => {
+    const session = (ex.sessions || []).find(s => s.date === dateStr);
+    const prevSession = getPreviousSessionBefore(ex, dateStr);
+    return {
+      id: ex.id,
+      name: ex.name,
+      sets: session ? session.sets || [] : [],
+      prevSets: prevSession ? prevSession.sets || [] : []
+    };
+  }));
+}
+
+function getWorkoutSummaryFromStates(exStates) {
+  return buildWorkoutSummary(exStates.map(ex => ({
+    id: ex.id,
+    name: ex.name,
+    sets: ex.sets || [],
+    prevSets: ex.lastSets || []
+  })));
+}
+
 // ==================== COMPONENTS ====================
 
 // --- Tab Bar ---
@@ -827,9 +952,8 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
       let note = '';
       let latest;
       if (editSession) {
-        // When editing, find the session before the one being edited so percent changes are meaningful
-        const sorted = [...(ex.sessions || [])].sort((a, b) => b.date.localeCompare(a.date));
-        latest = sorted.find(s => s.date < editSession.date) || null;
+        // When editing, compare against the session before the one being edited.
+        latest = getPreviousSessionBefore(ex, editSession.date);
       } else {
         latest = getLatestSession(ex);
       }
@@ -849,7 +973,7 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
           sets = [{ id: uuid(), weight: 0, reps: 0, effort: 0 }];
         }
       }
-      return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: isEdit, lastSets, note };
+      return { id: ex.id, name: ex.name, repRange: ex.repRange, sets, collapsed: true, lastSets, note };
     });
   }
   );
@@ -1111,49 +1235,72 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
         </div>
         {!isEdit && <RestTimerBar />}
         <div style={{ flex:1, overflowY:'auto', WebkitOverflowScrolling:'touch', padding:'16px', paddingBottom:'var(--safe-bottom)' }}>
-          {/* e1RM progress widget for historical workouts */}
+          {/* Workout overview for historical workouts */}
           {isEdit && exStates.length > 0 && (() => {
-            const items = exStates.map(ex => {
-              const curr = ex.sets.filter(s => s.weight > 0 && s.reps > 0);
-              const prev = (ex.lastSets || []).filter(s => s.weight > 0 && s.reps > 0);
-              if (curr.length === 0) return null;
-              const currE1rm = Math.max(...curr.map(s => s.weight * (1 + s.reps / 30)));
-              const prevE1rm = prev.length > 0 ? Math.max(...prev.map(s => s.weight * (1 + s.reps / 30))) : null;
-              const pct = prevE1rm && prevE1rm > 0 ? ((currE1rm - prevE1rm) / prevE1rm * 100) : null;
-              return { name: ex.name, currE1rm, prevE1rm, pct };
-            }).filter(Boolean);
-            if (items.length === 0) return null;
-            const maxE1rm = Math.max(...items.map(it => Math.max(it.currE1rm, it.prevE1rm || 0)));
+            const summary = getWorkoutSummaryFromStates(exStates);
+            if (summary.items.length === 0) return null;
+            const maxVolume = Math.max(...summary.items.map(it => Math.max(it.current.volume, it.previous.volume || 0)), 1);
+            const statCards = [
+              { label: 'Sets', value: summary.totals.sets.toLocaleString(), sub: `${summary.totals.exerciseCount} exercise${summary.totals.exerciseCount !== 1 ? 's' : ''}` },
+              { label: 'Reps', value: summary.totals.reps.toLocaleString(), sub: summary.repsPct != null ? formatDeltaPercent(summary.repsPct, { suffix: ' vs prev' }) : '\u00A0' },
+              { label: 'Strength', value: summary.strengthPct != null ? formatDeltaPercent(summary.strengthPct) : 'New', sub: summary.comparableCount > 0 ? `${summary.comparableCount} compared` : '\u00A0' }
+            ];
             return (
               <div style={{
                 marginBottom:'16px', borderRadius:'var(--radius)', overflow:'hidden',
                 border:'1px solid var(--card-border)', background:'var(--bg2)', padding:'14px'
               }}>
-                <div style={{ fontSize:'13px', fontWeight:600, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.3px', marginBottom:'12px' }}>Session Progress</div>
-                {items.map((it, i) => {
-                  const currW = maxE1rm > 0 ? (it.currE1rm / maxE1rm * 100) : 0;
-                  const prevW = it.prevE1rm && maxE1rm > 0 ? (it.prevE1rm / maxE1rm * 100) : 0;
-                  const barColor = it.pct == null ? 'var(--blue)' : it.pct >= 0 ? 'var(--green)' : 'var(--red)';
+                <div style={{ fontSize:'13px', fontWeight:600, color:'var(--text3)', textTransform:'uppercase', letterSpacing:0, marginBottom:'12px' }}>Workout Overview</div>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'12px', marginBottom:'12px' }}>
+                  <div>
+                    <div style={{ fontSize:'28px', fontWeight:800, lineHeight:1 }}>{formatCompactNumber(summary.totals.volume)} lb</div>
+                    <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'4px' }}>Total volume</div>
+                  </div>
+                  {summary.volumePct != null && (
+                    <div style={{
+                      fontSize:'13px', fontWeight:700, color:getDeltaColor(summary.volumePct),
+                      padding:'5px 8px', borderRadius:'999px', background:'var(--bg3)', whiteSpace:'nowrap'
+                    }}>
+                      {formatDeltaPercent(summary.volumePct, { suffix: ' vol' })}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(3, minmax(0, 1fr))', gap:'8px', marginBottom:'14px' }}>
+                  {statCards.map(card => (
+                    <div key={card.label} style={{ background:'var(--bg)', border:'1px solid var(--card-border)', borderRadius:'var(--radius)', padding:'9px 8px' }}>
+                      <div style={{ fontSize:'11px', color:'var(--text3)', textTransform:'uppercase', letterSpacing:0 }}>{card.label}</div>
+                      <div style={{ fontSize:'17px', fontWeight:700, marginTop:'4px', color: card.label === 'Strength' ? getDeltaColor(summary.strengthPct) : 'var(--text)' }}>{card.value}</div>
+                      <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:'2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{card.sub}</div>
+                    </div>
+                  ))}
+                </div>
+                {summary.items.map((it, i) => {
+                  const currW = maxVolume > 0 ? (it.current.volume / maxVolume * 100) : 0;
+                  const prevW = it.previous.volume > 0 && maxVolume > 0 ? (it.previous.volume / maxVolume * 100) : 0;
+                  const barColor = it.strengthPct == null ? 'var(--blue)' : getDeltaColor(it.strengthPct);
                   return (
-                    <div key={i} style={{ marginBottom: i < items.length - 1 ? '10px' : 0 }}>
+                    <div key={i} style={{ marginBottom: i < summary.items.length - 1 ? '10px' : 0 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
                         <span style={{ fontSize:'13px', fontWeight:500 }}>{it.name}</span>
-                        <span style={{ fontSize:'12px', fontWeight:600, color: barColor }}>
-                          {it.pct != null ? `${it.pct >= 0 ? '▲' : '▼'}${Math.round(Math.abs(it.pct))}%` : 'New'}
+                        <span style={{ fontSize:'12px', fontWeight:600, color: it.strengthPct == null ? 'var(--text3)' : getDeltaColor(it.strengthPct) }}>
+                          {it.strengthPct != null ? formatDeltaPercent(it.strengthPct, { arrows: true, suffix: ' e1RM' }) : 'New'}
                         </span>
                       </div>
-                      <div style={{ position:'relative', height:'6px', borderRadius:'3px', background:'var(--bg3)' }}>
-                        <div style={{
-                          position:'absolute', height:'100%', borderRadius:'3px',
-                          width: currW + '%', background: barColor, transition:'width 0.3s ease'
-                        }} />
-                        {it.prevE1rm && prevW > 0 && (
+                      <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                        <div style={{ position:'relative', flex:1, height:'6px', borderRadius:'3px', background:'var(--bg3)' }}>
                           <div style={{
-                            position:'absolute', top:'-3px', height:'12px', width:'2px',
-                            left: prevW + '%', marginLeft:'-1px',
-                            background:'var(--text)', borderRadius:'1px', opacity: 0.6
+                            position:'absolute', height:'100%', borderRadius:'3px',
+                            width: currW + '%', background: barColor, transition:'width 0.3s ease'
                           }} />
-                        )}
+                          {prevW > 0 && (
+                            <div style={{
+                              position:'absolute', top:'-3px', height:'12px', width:'2px',
+                              left: prevW + '%', marginLeft:'-1px',
+                              background:'var(--text)', borderRadius:'1px', opacity:0.55
+                            }} />
+                          )}
+                        </div>
+                        <span style={{ fontSize:'11px', color:'var(--text3)', width:'52px', textAlign:'right' }}>{formatCompactNumber(it.current.volume)} lb</span>
                       </div>
                     </div>
                   );
@@ -1194,20 +1341,11 @@ function WorkoutModal({ catId, data, onSave, onClose, onMinimize, editSession, r
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
                     {ex.lastSets && (() => {
-                      const curr = ex.sets.filter(s => s.weight > 0 && s.reps > 0);
-                      if (curr.length === 0) return null;
-                      // Compare each completed set against its counterpart from last session
-                      const prev = ex.lastSets.filter(s => s.weight > 0 && s.reps > 0);
-                      if (prev.length === 0) return null;
-                      const currAvg = curr.reduce((sum, s) => sum + s.weight * (1 + s.reps / 30), 0) / curr.length;
-                      const prevAvg = prev.slice(0, curr.length).reduce((sum, s) => sum + s.weight * (1 + s.reps / 30), 0) / Math.min(prev.length, curr.length);
-                      const pct = ((currAvg - prevAvg) / prevAvg * 100);
-                      const rounded = Math.round(Math.abs(pct));
-                      if (rounded === 0) return null;
-                      const up = pct >= 0;
+                      const { strengthPct } = getExerciseSessionSummary(ex.sets, ex.lastSets);
+                      if (strengthPct == null) return null;
                       return (
-                        <span style={{ fontSize:'11px', fontWeight:600, color: up ? 'var(--green)' : 'var(--red)' }}>
-                          {up ? '▲' : '▼'}{rounded}%
+                        <span style={{ fontSize:'11px', fontWeight:600, color:getDeltaColor(strengthPct) }}>
+                          {formatDeltaPercent(strengthPct, { arrows: true })}
                         </span>
                       );
                     })()}
@@ -1540,26 +1678,18 @@ function CategoryView({ catId, data, onEditSession }) {
     return <EmptyState iconName="dumbbell" title="No workouts yet" subtitle="Tap the play button to start your first workout" />;
   }
 
-  // Pre-compute avg e1RM per date for trend arrows and bars
-  const e1rms = {};
+  // Pre-compute daily workout totals for row summaries.
+  const summariesByDate = {};
   sortedDates.forEach(date => {
-    const exE1rms = dateMap[date].map(ex => {
-      const valid = ex.sets.filter(s => s.weight > 0 && s.reps > 0);
-      return valid.length > 0 ? Math.max(...valid.map(s => s.weight * (1 + s.reps / 30))) : 0;
-    }).filter(v => v > 0);
-    e1rms[date] = exE1rms.length > 0 ? exE1rms.reduce((a, b) => a + b, 0) / exE1rms.length : 0;
+    summariesByDate[date] = getWorkoutSummaryForDate(exercises, date);
   });
-  const maxE1rm = Math.max(...Object.values(e1rms), 1);
 
   return (
     <div>
-      {sortedDates.map((date, idx) => {
+      {sortedDates.map((date) => {
         const workout = dateMap[date];
-        const totalSets = workout.reduce((sum, ex) => sum + ex.sets.length, 0);
-        const vol = e1rms[date];
-        const prevDate = sortedDates[idx + 1];
-        const prevVol = prevDate ? e1rms[prevDate] : null;
-        const pctChange = prevVol != null && prevVol > 0 ? ((vol - prevVol) / prevVol) * 100 : null;
+        const summary = summariesByDate[date];
+        const pctChange = summary.volumePct;
         return (
           <div key={date} style={{ borderBottom:'1px solid var(--bg3)' }}>
             <button onClick={() => onEditSession(catId, workout[0].exId, date)} style={{
@@ -1569,15 +1699,16 @@ function CategoryView({ catId, data, onEditSession }) {
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:'16px', fontWeight:600 }}>{formatDate(date)}</div>
                   <div style={{ fontSize:'13px', color:'var(--text3)', marginTop:'2px' }}>
-                    {workout.length} exercise{workout.length !== 1 ? 's' : ''} · {totalSets} set{totalSets !== 1 ? 's' : ''}
+                    {summary.totals.exerciseCount} exercise{summary.totals.exerciseCount !== 1 ? 's' : ''} · {summary.totals.sets} set{summary.totals.sets !== 1 ? 's' : ''}
+                  </div>
+                  <div style={{ fontSize:'12px', color:'var(--text3)', marginTop:'2px' }}>
+                    {formatCompactNumber(summary.totals.volume)} lb · {summary.totals.reps.toLocaleString()} reps
                   </div>
                 </div>
                 {(() => {
                   if (pctChange == null) return null;
-                  const rounded = Math.round(pctChange);
-                  if (rounded === 0) return null;
                   // Diverging bar: center line = 0%, extends right (green) or left (red)
-                  const maxPct = 5; // clamp at ±5% so small changes are visible
+                  const maxPct = 20; // total workout volume can swing more than per-lift strength
                   const clamped = Math.max(-maxPct, Math.min(maxPct, pctChange));
                   const barW = (Math.abs(clamped) / maxPct) * 50; // max 50% of the container
                   const isUp = clamped >= 0;
@@ -1595,9 +1726,12 @@ function CategoryView({ catId, data, onEditSession }) {
                             : { right:'50%', width: barW + '%' })
                         }} />
                       </div>
-                      <span style={{ fontSize:'13px', fontWeight:600, color: isUp ? 'var(--green)' : 'var(--red)', minWidth:'32px', textAlign:'right' }}>
-                        {isUp ? '+' : ''}{rounded}%
-                      </span>
+                      <div style={{ minWidth:'34px', textAlign:'right' }}>
+                        <div style={{ fontSize:'13px', fontWeight:600, color:getDeltaColor(pctChange) }}>
+                          {formatDeltaPercent(pctChange)}
+                        </div>
+                        <div style={{ fontSize:'10px', color:'var(--text3)', lineHeight:1 }}>vol</div>
+                      </div>
                     </div>
                   );
                 })()}
